@@ -44,4 +44,18 @@ mod tests {
         assert_eq!(21, Field::HEIGHT);
         assert_eq!(10, Field::WIDTH);
     }
+
+    #[test]
+    fn test_new() {
+        // blockがすべて埋まっていないかをテスト
+        let f = Field::new();
+        for h in 0..Field::HEIGHT {
+            for w in 0..Field::WIDTH {
+                if f.blocks[h][w].filled {
+                    assert!(false);
+                }
+            }
+        }
+        assert!(true);
+    }
 }
