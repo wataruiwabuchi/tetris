@@ -9,21 +9,18 @@ struct FieldBlock {
 
 // テトリスのフィールド
 struct Field {
+    height: usize,
+    width: usize,
     blocks: Vec<Vec<FieldBlock>>,
 }
 
 impl Field {
-    const HEIGHT: usize = 21;
-    const WIDTH: usize = 10;
-}
-
-impl Field {
     /// Fieldのコンストラクタ
-    pub fn new() -> Field {
+    pub fn new(height: usize, width: usize) -> Field {
         let mut blocks: Vec<Vec<FieldBlock>> = Vec::new();
-        for _ in 0..Field::HEIGHT {
+        for _ in 0..height {
             let mut tmp_vec: Vec<FieldBlock> = Vec::new();
-            for _ in 0..Field::WIDTH {
+            for _ in 0..width {
                 tmp_vec.push(FieldBlock {
                     filled: false,
                     color: [0 as f32; 4],
@@ -31,7 +28,19 @@ impl Field {
             }
             blocks.push(tmp_vec);
         }
-        Field { blocks: blocks }
+        Field {
+            height: height,
+            width: width,
+            blocks: blocks,
+        }
+    }
+
+    pub fn get_height(&self) -> usize {
+        self.height
+    }
+
+    pub fn get_width(&self) -> usize {
+        self.width
     }
 }
 
@@ -40,17 +49,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_const() {
-        assert_eq!(21, Field::HEIGHT);
-        assert_eq!(10, Field::WIDTH);
-    }
-
-    #[test]
     fn test_new() {
         // blockがすべて埋まっていないかをテスト
-        let f = Field::new();
-        for h in 0..Field::HEIGHT {
-            for w in 0..Field::WIDTH {
+        let f = Field::new(5, 4);
+        for h in 0..f.get_height() {
+            for w in 0..f.get_width() {
                 if f.blocks[h][w].filled {
                     assert!(false);
                 }
