@@ -1,5 +1,6 @@
 /// 21×10のテトリスのフィールドを表現
 /// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
+use crate::mino;
 
 // フィールドの各ブロック
 struct FieldBlock {
@@ -68,6 +69,20 @@ impl Field {
 
         return Some(filled_rows);
     }
+}
+
+pub enum Orientation {
+    Upward,
+    Rightward,
+    Downward,
+    Leftward,
+}
+
+struct ControlledMino {
+    x: usize,
+    y: usize,
+    mino: mino::Mino,
+    ori: Orientation,
 }
 
 #[cfg(test)]

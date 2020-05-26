@@ -2,28 +2,13 @@
 // 現状ではget_heightなどの全く同じ動作を行う関数をすべてのミノに対して実装している
 // traitのデフォルト実装でこの部分を共通化できれば良いがtraitからはメンバ変数にアクセスできないのでその部分に実装するとエラーが出る
 
-pub enum Orientation {
-    Upward,
-    Rightward,
-    Downward,
-    Leftward,
-}
-
 pub struct Mino {
-    x: usize,
-    y: usize,
     size: usize,
     shape: Vec<Vec<bool>>,
     color: [f32; 4],
 }
 
 impl Mino {
-    pub fn get_x(&self) -> usize {
-        self.x
-    }
-    pub fn get_y(&self) -> usize {
-        self.y
-    }
     pub fn get_size(&self) -> usize {
         self.size
     }
