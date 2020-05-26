@@ -85,6 +85,53 @@ struct ControlledMino {
     ori: Orientation,
 }
 
+impl ControlledMino {
+    pub fn get_x(&self) -> usize {
+        self.x
+    }
+
+    pub fn get_y(&self) -> usize {
+        self.y
+    }
+
+    // ミノの種類と向きからフィールド上での状態を生成する
+    // ミノの向きによってclosureを切り替えている
+    pub fn render(&self) -> Vec<Vec<bool>> {
+        let size = self.mino.get_size();
+        if size < 1 {
+            return vec![];
+        }
+        let shape = vec![vec![false; size]; size];
+        let mut method: Box<dyn FnMut(usize, usize) -> bool> = match self.ori {
+            Orientation::Upward => Box::new(|i, j| shape[i][j]),
+            Orientation::Rightward => Box::new(|i, j| shape[size - 1 - j][i]),
+            Orientation::Downward => Box::new(|i, j| shape[size - 1 - i][size - 1 - j]),
+            Orientation::Leftward => Box::new(|i, j| shape[j][size - 1 - i]),
+        };
+        (0..size)
+            .map(|i| (0..size).map(|j| method(i, j)).collect())
+            .collect()
+    }
+
+    pub fn right_rotate(&self) -> Orientation {
+        match &self.ori {
+            Orientation::Upward => Orientation::Rightward,
+            Orientation::Rightward => Orientation::Downward,
+            Orientation::Downward => Orientation::Leftward,
+            Orientation::Leftward => Orientation::Upward,
+        }
+    }
+
+    pub fn left_rotate(&self) -> Orientation {
+        match &self.ori {
+            Orientation::Upward => Orientation::Leftward,
+            Orientation::Rightward => Orientation::Upward,
+            Orientation::Downward => Orientation::Rightward,
+            Orientation::Leftward => Orientation::Downward,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
