@@ -1,6 +1,7 @@
 /// 21×10のテトリスのフィールドを表現
 /// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
 use crate::mino;
+use crate::mino::Mino;
 
 // フィールドの各ブロック
 struct FieldBlock {
@@ -78,14 +79,14 @@ pub enum Orientation {
     Leftward,
 }
 
-struct ControlledMino {
+struct ControlledMino<T: mino::Mino> {
     x: usize,
     y: usize,
-    mino: mino::Mino,
+    mino: T,
     ori: Orientation,
 }
 
-impl ControlledMino {
+impl<T: mino::Mino> ControlledMino<T> {
     pub fn get_x(&self) -> usize {
         self.x
     }
@@ -101,7 +102,7 @@ impl ControlledMino {
         if size < 1 {
             return vec![];
         }
-        let shape = vec![vec![false; size]; size];
+        let shape = self.mino.get_shape();
         let mut method: Box<dyn FnMut(usize, usize) -> bool> = match self.ori {
             Orientation::Upward => Box::new(|i, j| shape[i][j]),
             Orientation::Rightward => Box::new(|i, j| shape[size - 1 - j][i]),
@@ -133,7 +134,7 @@ impl ControlledMino {
 }
 
 #[cfg(test)]
-mod tests {
+mod field_tests {
     use super::*;
 
     #[test]
@@ -201,5 +202,29 @@ mod tests {
                 None => assert_eq!(None, case.want, "failed {}", case.name),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod controlledmino_tests {
+    use super::*;
+
+    #[test]
+    fn test_render() {
+        let m = ControlledMino {
+            x: 0,
+            y: 0,
+            mino: mino::TMino::new(),
+            ori: Orientation::Upward,
+        };
+
+        assert_eq!(
+            m.render(),
+            vec![
+                vec![false, true, false],
+                vec![true, true, true],
+                vec![false, false, false],
+            ]
+        );
     }
 }
