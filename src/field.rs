@@ -211,20 +211,73 @@ mod controlledmino_tests {
 
     #[test]
     fn test_render() {
-        let m = ControlledMino {
-            x: 0,
-            y: 0,
-            mino: mino::TMino::new(),
-            ori: Orientation::Upward,
+        struct TestCase {
+            name: String,
+            x: ControlledMino<mino::TMino>,
+            want: Vec<Vec<bool>>,
         };
 
-        assert_eq!(
-            m.render(),
-            vec![
-                vec![false, true, false],
-                vec![true, true, true],
-                vec![false, false, false],
-            ]
-        );
+        let cases = vec![
+            TestCase {
+                name: "upward".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 0,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Upward,
+                },
+                want: vec![
+                    vec![false, true, false],
+                    vec![true, true, true],
+                    vec![false, false, false],
+                ],
+            },
+            TestCase {
+                name: "right".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 0,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Rightward,
+                },
+                want: vec![
+                    vec![false, true, false],
+                    vec![false, true, true],
+                    vec![false, true, false],
+                ],
+            },
+            TestCase {
+                name: "downward".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 0,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Downward,
+                },
+                want: vec![
+                    vec![false, false, false],
+                    vec![true, true, true],
+                    vec![false, true, false],
+                ],
+            },
+            TestCase {
+                name: "left".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 0,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Leftward,
+                },
+                want: vec![
+                    vec![false, true, false],
+                    vec![true, true, false],
+                    vec![false, true, false],
+                ],
+            },
+        ];
+
+        for case in cases {
+            assert_eq!(case.x.render(), case.want, "case {}: failed", case.name)
+        }
     }
 }
