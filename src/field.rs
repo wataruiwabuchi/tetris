@@ -280,4 +280,104 @@ mod controlledmino_tests {
             assert_eq!(case.x.render(), case.want, "case {}: failed", case.name)
         }
     }
+
+    #[test]
+    fn test_right_rotate() {
+        struct TestCase {
+            name: String,
+            x: Orientation,
+            want: i32,
+        };
+
+        let cases = vec![
+            TestCase {
+                name: "upward".to_string(),
+                x: Orientation::Upward,
+                want: 1,
+            },
+            TestCase {
+                name: "rightward".to_string(),
+                x: Orientation::Rightward,
+                want: 2,
+            },
+            TestCase {
+                name: "downward".to_string(),
+                x: Orientation::Downward,
+                want: 3,
+            },
+            TestCase {
+                name: "leftward".to_string(),
+                x: Orientation::Leftward,
+                want: 0,
+            },
+        ];
+
+        let mut m = ControlledMino {
+            x: 0,
+            y: 0,
+            mino: mino::TMino::new(),
+            ori: Orientation::Upward,
+        };
+        for case in cases {
+            m.ori = case.x;
+            m.right_rotate();
+            let result = match m.ori {
+                Orientation::Upward => 0,
+                Orientation::Rightward => 1,
+                Orientation::Downward => 2,
+                Orientation::Leftward => 3,
+            };
+            assert_eq!(result, case.want, "case {}: failed", case.name)
+        }
+    }
+
+    #[test]
+    fn test_left_rotate() {
+        struct TestCase {
+            name: String,
+            x: Orientation,
+            want: i32,
+        };
+
+        let cases = vec![
+            TestCase {
+                name: "upward".to_string(),
+                x: Orientation::Upward,
+                want: 3,
+            },
+            TestCase {
+                name: "rightward".to_string(),
+                x: Orientation::Rightward,
+                want: 0,
+            },
+            TestCase {
+                name: "downward".to_string(),
+                x: Orientation::Downward,
+                want: 1,
+            },
+            TestCase {
+                name: "leftward".to_string(),
+                x: Orientation::Leftward,
+                want: 2,
+            },
+        ];
+
+        let mut m = ControlledMino {
+            x: 0,
+            y: 0,
+            mino: mino::TMino::new(),
+            ori: Orientation::Upward,
+        };
+        for case in cases {
+            m.ori = case.x;
+            m.left_rotate();
+            let result = match m.ori {
+                Orientation::Upward => 0,
+                Orientation::Rightward => 1,
+                Orientation::Downward => 2,
+                Orientation::Leftward => 3,
+            };
+            assert_eq!(result, case.want, "case {}: failed", case.name)
+        }
+    }
 }
