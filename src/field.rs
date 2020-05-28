@@ -114,17 +114,17 @@ impl<T: mino::Mino> ControlledMino<T> {
             .collect()
     }
 
-    pub fn right_rotate(&self) -> Orientation {
-        match &self.ori {
+    pub fn right_rotate(&mut self) {
+        self.ori = match &self.ori {
             Orientation::Upward => Orientation::Rightward,
             Orientation::Rightward => Orientation::Downward,
             Orientation::Downward => Orientation::Leftward,
             Orientation::Leftward => Orientation::Upward,
-        }
+        };
     }
 
-    pub fn left_rotate(&self) -> Orientation {
-        match &self.ori {
+    pub fn left_rotate(&mut self) {
+        self.ori = match &self.ori {
             Orientation::Upward => Orientation::Leftward,
             Orientation::Rightward => Orientation::Upward,
             Orientation::Downward => Orientation::Rightward,
