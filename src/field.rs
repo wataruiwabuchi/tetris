@@ -1,15 +1,15 @@
-/// 21×10のテトリスのフィールドを表現
-/// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
+/// 21$B!_(B10$B$N%F%H%j%9$N%U%#!<%k%I$rI=8=(B
+/// controller$B$+$i(Bstep$B$,8F$S=P$5$l$=$N$?$S$KMn2<=hM}$d:o=|=hM}$r9T$&M=Dj(B
 use crate::mino;
 use crate::mino::Mino;
 
-// フィールドの各ブロック
+// $B%U%#!<%k%I$N3F%V%m%C%/(B
 struct FieldBlock {
-    filled: bool,    // ブロックにミノが存在するか
-    color: [f32; 4], // ブロックの色
+    filled: bool,    // $B%V%m%C%/$K%_%N$,B8:_$9$k$+(B
+    color: [f32; 4], // $B%V%m%C%/$N?'(B
 }
 
-// テトリスのフィールド
+// $B%F%H%j%9$N%U%#!<%k%I(B
 struct Field {
     height: usize,
     width: usize,
@@ -17,7 +17,7 @@ struct Field {
 }
 
 impl Field {
-    /// Fieldのコンストラクタ
+    /// Field$B$N%3%s%9%H%i%/%?(B
     pub fn new(height: usize, width: usize) -> Field {
         let mut blocks: Vec<Vec<FieldBlock>> = Vec::new();
         for _ in 0..height {
@@ -45,8 +45,9 @@ impl Field {
         self.width
     }
 
-    // 横列ごとにminoが揃っているかを判定し揃っている列のインデクスを返す
-    // 削除したかという情報と削除した列の情報を返す
+    // $B2#Ns$4$H$K(Bmino$B$,B7$C$F$$$k$+$rH=Dj$7B7$C$F$$$kNs$N%$%s%G%/%9$rJV$9(B
+    // $B:o=|$7$?$+$H$$$&>pJs$H:o=|$7$?Ns$N>pJs$rJV$9(B
+    // TODO : map, all, any$B$"$?$j$r;H$&$H$b$C$H4J7i$K=q$1$k$i$7$$$N$G=$@5(B
     pub fn is_filled_each_row(&self) -> Option<Vec<usize>> {
         let mut filled_rows = Vec::new();
 
@@ -100,8 +101,8 @@ impl<T: mino::Mino> ControlledMino<T> {
         self.grounded
     }
 
-    // ミノの種類と向きからフィールド上での状態を生成する
-    // ミノの向きによってclosureを切り替えている
+    // $B%_%N$N<oN`$H8~$-$+$i%U%#!<%k%I>e$G$N>uBV$r@8@.$9$k(B
+    // $B%_%N$N8~$-$K$h$C$F(Bclosure$B$r@Z$jBX$($F$$$k(B
     pub fn render(&self) -> Vec<Vec<bool>> {
         let size = self.mino.get_size();
         if size < 1 {
@@ -119,6 +120,8 @@ impl<T: mino::Mino> ControlledMino<T> {
             .collect()
     }
 
+    // TODO : $B2sE>8e$N>uBV$,IT@5$G$J$$$+$NH=Dj$rDI2C(B
+    // TODO : SRS$B$NF3F~(B
     pub fn right_rotate(&mut self) {
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Rightward,
@@ -128,6 +131,8 @@ impl<T: mino::Mino> ControlledMino<T> {
         };
     }
 
+    // TODO : $B2sE>8e$N>uBV$,IT@5$G$J$$$+$NH=Dj$rDI2C(B
+    // TODO : SRS$B$NF3F~(B
     pub fn left_rotate(&mut self) {
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Leftward,
@@ -137,8 +142,8 @@ impl<T: mino::Mino> ControlledMino<T> {
         }
     }
 
-    // moveは予約語らしいので使えない
-    // ミノを移動させる
+    // move$B$OM=Ls8l$i$7$$$N$G;H$($J$$(B
+    // $B%_%N$r0\F0$5$;$k(B
     pub fn move_mino(&mut self, field: &Field, ori: Orientation) {
         let size = self.mino.get_size();
         let rendered_mino = self.render();
@@ -161,7 +166,7 @@ impl<T: mino::Mino> ControlledMino<T> {
         println!("{} {}", moved_mino_x, moved_mino_y);
         println!("{:?}", rendered_mino);
 
-        // ミノを一つ下に移動させることが可能か判定
+        // $B%_%N$r0l$D2<$K0\F0$5$;$k$3$H$,2DG=$+H=Dj(B
         let mut movable = true;
         for i in 0..size {
             for j in 0..size {
@@ -169,7 +174,8 @@ impl<T: mino::Mino> ControlledMino<T> {
                     let x_in_field = j + moved_mino_x;
                     let y_in_field = i + moved_mino_y;
 
-                    // フィールドの境界チェック
+                    // $B%U%#!<%k%I$N6-3&%A%'%C%/(B
+                    // $B0\F0@h$N%V%m%C%/$,Kd$^$C$F$$$J$$$+$r%A%'%C%/(B
                     if x_in_field >= field.get_width()
                         || y_in_field >= field.get_height()
                         || field.blocks[y_in_field][x_in_field].filled
@@ -199,7 +205,7 @@ mod field_tests {
 
     #[test]
     fn test_new() {
-        // blockがすべて埋まっていないかをテスト
+        // block$B$,$9$Y$FKd$^$C$F$$$J$$$+$r%F%9%H(B
         let f = Field::new(5, 4);
         for h in 0..f.get_height() {
             for w in 0..f.get_width() {
@@ -234,7 +240,7 @@ mod field_tests {
                 want: Some(vec![0, 1, 2, 3, 4]),
             },
             TestCase {
-                // 一部が埋まっている
+                // $B0lIt$,Kd$^$C$F$$$k(B
                 name: "hand craft".to_string(),
                 x: vec![
                     vec![true, true, true, true],
@@ -248,7 +254,7 @@ mod field_tests {
         ];
 
         for case in cases {
-            // blockがすべて埋まっていないかをテスト
+            // block$B$,$9$Y$FKd$^$C$F$$$J$$$+$r%F%9%H(B
             let mut f = Field::new(test_height, test_width);
             for h in 0..f.get_height() {
                 for w in 0..f.get_width() {
@@ -468,7 +474,7 @@ mod controlledmino_tests {
 
         let cases = vec![
             TestCase {
-                name: "落下可能".to_string(),
+                name: "$BMn2<2DG=(B".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 0,
@@ -480,7 +486,7 @@ mod controlledmino_tests {
                 want: (0, 1, false),
             },
             TestCase {
-                name: "右移動可能".to_string(),
+                name: "$B1&0\F02DG=(B".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 0,
@@ -492,7 +498,7 @@ mod controlledmino_tests {
                 want: (1, 0, false),
             },
             TestCase {
-                name: "左移動可能".to_string(),
+                name: "$B:80\F02DG=(B".to_string(),
                 x: ControlledMino {
                     x: 1,
                     y: 0,
@@ -504,7 +510,7 @@ mod controlledmino_tests {
                 want: (0, 0, false),
             },
             TestCase {
-                name: "下のブロックが埋まっているため落下不可能".to_string(),
+                name: "$B2<$N%V%m%C%/$,Kd$^$C$F$$$k$?$aMn2<IT2DG=(B".to_string(),
                 x: ControlledMino {
                     x: 1,
                     y: 1,
@@ -516,7 +522,7 @@ mod controlledmino_tests {
                 want: (1, 1, true),
             },
             TestCase {
-                name: "ブロックが埋まっているため右移動不可能".to_string(),
+                name: "$B%V%m%C%/$,Kd$^$C$F$$$k$?$a1&0\F0IT2DG=(B".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 3,
@@ -528,7 +534,7 @@ mod controlledmino_tests {
                 want: (0, 3, false),
             },
             TestCase {
-                name: "フィールド境界のため左移動不可能".to_string(),
+                name: "$B%U%#!<%k%I6-3&$N$?$a:80\F0IT2DG=(B".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 3,
@@ -540,7 +546,7 @@ mod controlledmino_tests {
                 want: (0, 3, false),
             },
             TestCase {
-                name: "フィールド境界のため落下不可能".to_string(),
+                name: "$B%U%#!<%k%I6-3&$N$?$aMn2<IT2DG=(B".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 3,
