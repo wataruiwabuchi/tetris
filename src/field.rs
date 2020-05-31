@@ -1,15 +1,15 @@
-/// 21$B!_(B10$B$N%F%H%j%9$N%U%#!<%k%I$rI=8=(B
-/// controller$B$+$i(Bstep$B$,8F$S=P$5$l$=$N$?$S$KMn2<=hM}$d:o=|=hM}$r9T$&M=Dj(B
+/// 21×10のテトリスのフィールドを表現
+/// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
 use crate::mino;
 use crate::mino::Mino;
 
-// $B%U%#!<%k%I$N3F%V%m%C%/(B
+// フィールドの各ブロック
 struct FieldBlock {
-    filled: bool,    // $B%V%m%C%/$K%_%N$,B8:_$9$k$+(B
-    color: [f32; 4], // $B%V%m%C%/$N?'(B
+    filled: bool,    // ブロックにミノが存在するか
+    color: [f32; 4], // ブロックの色
 }
 
-// $B%F%H%j%9$N%U%#!<%k%I(B
+// テトリスのフィールド
 struct Field {
     height: usize,
     width: usize,
@@ -17,7 +17,7 @@ struct Field {
 }
 
 impl Field {
-    /// Field$B$N%3%s%9%H%i%/%?(B
+    /// Fieldのコンストラクタ
     pub fn new(height: usize, width: usize) -> Field {
         let mut blocks: Vec<Vec<FieldBlock>> = Vec::new();
         for _ in 0..height {
@@ -45,8 +45,8 @@ impl Field {
         self.width
     }
 
-    // $B2#Ns$4$H$K(Bmino$B$,B7$C$F$$$k$+$rH=Dj$7B7$C$F$$$kNs$N%$%s%G%/%9$rJV$9(B
-    // $B:o=|$7$?$+$H$$$&>pJs$H:o=|$7$?Ns$N>pJs$rJV$9(B
+    // 横列ごとにminoが揃っているかを判定し揃っている列のインデクスを返す
+    // 削除したかという情報と削除した列の情報を返す
     pub fn is_filled_each_row(&self) -> Option<Vec<usize>> {
         let mut filled_rows = Vec::new();
 
@@ -84,6 +84,7 @@ struct ControlledMino<T: mino::Mino> {
     y: usize,
     mino: T,
     ori: Orientation,
+    grounded: bool,
 }
 
 impl<T: mino::Mino> ControlledMino<T> {
@@ -95,8 +96,12 @@ impl<T: mino::Mino> ControlledMino<T> {
         self.y
     }
 
-    // $B%_%N$N<oN`$H8~$-$+$i%U%#!<%k%I>e$G$N>uBV$r@8@.$9$k(B
-    // $B%_%N$N8~$-$K$h$C$F(Bclosure$B$r@Z$jBX$($F$$$k(B
+    pub fn get_grounded(&self) -> bool {
+        self.grounded
+    }
+
+    // ミノの種類と向きからフィールド上での状態を生成する
+    // ミノの向きによってclosureを切り替えている
     pub fn render(&self) -> Vec<Vec<bool>> {
         let size = self.mino.get_size();
         if size < 1 {
@@ -131,6 +136,61 @@ impl<T: mino::Mino> ControlledMino<T> {
             Orientation::Leftward => Orientation::Downward,
         }
     }
+
+    // moveは予約語らしいので使えない
+    // ミノを移動させる
+    pub fn move_mino(&mut self, field: &Field, ori: Orientation) {
+        let size = self.mino.get_size();
+        let rendered_mino = self.render();
+        let mut moved_mino_x = self.get_x();
+        let mut moved_mino_y = self.get_y();
+
+        match ori {
+            Orientation::Upward => return,
+            Orientation::Rightward => moved_mino_x += 1,
+            Orientation::Downward => moved_mino_y += 1,
+            Orientation::Leftward => {
+                if moved_mino_x == 0 {
+                    return;
+                } else {
+                    moved_mino_x -= 1
+                }
+            }
+        }
+
+        println!("{} {}", moved_mino_x, moved_mino_y);
+        println!("{:?}", rendered_mino);
+
+        // ミノを一つ下に移動させることが可能か判定
+        let mut movable = true;
+        for i in 0..size {
+            for j in 0..size {
+                if rendered_mino[i][j] {
+                    let x_in_field = j + moved_mino_x;
+                    let y_in_field = i + moved_mino_y;
+
+                    // フィールドの境界チェック
+                    if x_in_field >= field.get_width()
+                        || y_in_field >= field.get_height()
+                        || field.blocks[y_in_field][x_in_field].filled
+                    {
+                        movable = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if movable {
+            self.x = moved_mino_x;
+            self.y = moved_mino_y;
+        } else {
+            match ori {
+                Orientation::Downward => self.grounded = true,
+                _ => {}
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -139,7 +199,7 @@ mod field_tests {
 
     #[test]
     fn test_new() {
-        // block$B$,$9$Y$FKd$^$C$F$$$J$$$+$r%F%9%H(B
+        // blockがすべて埋まっていないかをテスト
         let f = Field::new(5, 4);
         for h in 0..f.get_height() {
             for w in 0..f.get_width() {
@@ -174,7 +234,7 @@ mod field_tests {
                 want: Some(vec![0, 1, 2, 3, 4]),
             },
             TestCase {
-                // $B0lIt$,Kd$^$C$F$$$k(B
+                // 一部が埋まっている
                 name: "hand craft".to_string(),
                 x: vec![
                     vec![true, true, true, true],
@@ -188,7 +248,7 @@ mod field_tests {
         ];
 
         for case in cases {
-            // block$B$,$9$Y$FKd$^$C$F$$$J$$$+$r%F%9%H(B
+            // blockがすべて埋まっていないかをテスト
             let mut f = Field::new(test_height, test_width);
             for h in 0..f.get_height() {
                 for w in 0..f.get_width() {
@@ -225,6 +285,7 @@ mod controlledmino_tests {
                     y: 0,
                     mino: mino::TMino::new(),
                     ori: Orientation::Upward,
+                    grounded: false,
                 },
                 want: vec![
                     vec![false, true, false],
@@ -239,6 +300,7 @@ mod controlledmino_tests {
                     y: 0,
                     mino: mino::TMino::new(),
                     ori: Orientation::Rightward,
+                    grounded: false,
                 },
                 want: vec![
                     vec![false, true, false],
@@ -253,6 +315,7 @@ mod controlledmino_tests {
                     y: 0,
                     mino: mino::TMino::new(),
                     ori: Orientation::Downward,
+                    grounded: false,
                 },
                 want: vec![
                     vec![false, false, false],
@@ -267,6 +330,7 @@ mod controlledmino_tests {
                     y: 0,
                     mino: mino::TMino::new(),
                     ori: Orientation::Leftward,
+                    grounded: false,
                 },
                 want: vec![
                     vec![false, true, false],
@@ -317,6 +381,7 @@ mod controlledmino_tests {
             y: 0,
             mino: mino::TMino::new(),
             ori: Orientation::Upward,
+            grounded: false,
         };
         for case in cases {
             m.ori = case.x;
@@ -367,6 +432,7 @@ mod controlledmino_tests {
             y: 0,
             mino: mino::TMino::new(),
             ori: Orientation::Upward,
+            grounded: false,
         };
         for case in cases {
             m.ori = case.x;
@@ -378,6 +444,131 @@ mod controlledmino_tests {
                 Orientation::Leftward => 3,
             };
             assert_eq!(result, case.want, "case {}: failed", case.name)
+        }
+    }
+
+    #[test]
+    fn test_move() {
+        struct TestCase {
+            name: String,
+            x: ControlledMino<mino::TMino>,
+            move_ori: Orientation,
+            want: (usize, usize, bool),
+        };
+
+        let field_height = 5;
+        let field_width = 4;
+        let field_filled = vec![
+            vec![false, false, false, false],
+            vec![false, false, false, false],
+            vec![false, false, false, false],
+            vec![false, false, false, true],
+            vec![false, false, false, true],
+        ];
+
+        let cases = vec![
+            TestCase {
+                name: "落下可能".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 0,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Downward,
+                want: (0, 1, false),
+            },
+            TestCase {
+                name: "右移動可能".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 0,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Rightward,
+                want: (1, 0, false),
+            },
+            TestCase {
+                name: "左移動可能".to_string(),
+                x: ControlledMino {
+                    x: 1,
+                    y: 0,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Leftward,
+                want: (0, 0, false),
+            },
+            TestCase {
+                name: "下のブロックが埋まっているため落下不可能".to_string(),
+                x: ControlledMino {
+                    x: 1,
+                    y: 1,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Downward,
+                want: (1, 1, true),
+            },
+            TestCase {
+                name: "ブロックが埋まっているため右移動不可能".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 3,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Rightward,
+                want: (0, 3, false),
+            },
+            TestCase {
+                name: "フィールド境界のため左移動不可能".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 3,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Leftward,
+                want: (0, 3, false),
+            },
+            TestCase {
+                name: "フィールド境界のため落下不可能".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 3,
+                    mino: mino::TMino::new(),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Downward,
+                want: (0, 3, true),
+            },
+        ];
+
+        let mut f = Field::new(field_height, field_width);
+        for h in 0..f.get_height() {
+            for w in 0..f.get_width() {
+                f.blocks[h][w].filled = field_filled[h][w];
+            }
+        }
+
+        for case in cases {
+            let mut input = case.x;
+            input.move_mino(&f, case.move_ori);
+            assert_eq!(
+                (input.get_x(), input.get_y(), input.get_grounded()),
+                case.want,
+                "case {}: failed",
+                case.name
+            )
         }
     }
 }
