@@ -289,7 +289,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -304,7 +304,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Rightward,
                     grounded: false,
                 },
@@ -319,7 +319,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Downward,
                     grounded: false,
                 },
@@ -334,7 +334,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Leftward,
                     grounded: false,
                 },
@@ -385,7 +385,7 @@ mod controlledmino_tests {
         let mut m = ControlledMino {
             x: 0,
             y: 0,
-            mino: mino::TMino::new(),
+            mino: mino::TMino::default(),
             ori: Orientation::Upward,
             grounded: false,
         };
@@ -436,7 +436,7 @@ mod controlledmino_tests {
         let mut m = ControlledMino {
             x: 0,
             y: 0,
-            mino: mino::TMino::new(),
+            mino: mino::TMino::default(),
             ori: Orientation::Upward,
             grounded: false,
         };
@@ -474,11 +474,11 @@ mod controlledmino_tests {
 
         let cases = vec![
             TestCase {
-                name: "$BMn2<2DG=(B".to_string(),
+                name: "落下可能".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -486,11 +486,11 @@ mod controlledmino_tests {
                 want: (0, 1, false),
             },
             TestCase {
-                name: "$B1&0\F02DG=(B".to_string(),
+                name: "右移動可能".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -498,11 +498,11 @@ mod controlledmino_tests {
                 want: (1, 0, false),
             },
             TestCase {
-                name: "$B:80\F02DG=(B".to_string(),
+                name: "左移動可能".to_string(),
                 x: ControlledMino {
                     x: 1,
                     y: 0,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -510,11 +510,11 @@ mod controlledmino_tests {
                 want: (0, 0, false),
             },
             TestCase {
-                name: "$B2<$N%V%m%C%/$,Kd$^$C$F$$$k$?$aMn2<IT2DG=(B".to_string(),
+                name: "下のブロックが埋まっているため落下不可能".to_string(),
                 x: ControlledMino {
                     x: 1,
                     y: 1,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -522,11 +522,11 @@ mod controlledmino_tests {
                 want: (1, 1, true),
             },
             TestCase {
-                name: "$B%V%m%C%/$,Kd$^$C$F$$$k$?$a1&0\F0IT2DG=(B".to_string(),
+                name: "ブロックが埋まっているため右移動不可能".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 3,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -534,11 +534,11 @@ mod controlledmino_tests {
                 want: (0, 3, false),
             },
             TestCase {
-                name: "$B%U%#!<%k%I6-3&$N$?$a:80\F0IT2DG=(B".to_string(),
+                name: "フィールド境界のため左移動不可能".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 3,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -546,11 +546,11 @@ mod controlledmino_tests {
                 want: (0, 3, false),
             },
             TestCase {
-                name: "$B%U%#!<%k%I6-3&$N$?$aMn2<IT2DG=(B".to_string(),
+                name: "フィールド境界のため落下不可能".to_string(),
                 x: ControlledMino {
                     x: 0,
                     y: 3,
-                    mino: mino::TMino::new(),
+                    mino: mino::TMino::default(),
                     ori: Orientation::Upward,
                     grounded: false,
                 },

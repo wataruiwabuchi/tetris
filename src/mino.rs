@@ -3,7 +3,6 @@
 // traitのデフォルト実装でこの部分を共通化できれば良いがtraitからはメンバ変数にアクセスできないのでその部分に実装するとエラーが出る
 
 pub trait Mino {
-    fn new() -> Self;
     fn get_size(&self) -> usize;
     fn get_shape(&self) -> &Vec<Vec<bool>>;
     fn get_color(&self) -> [f32; 4];
@@ -15,8 +14,8 @@ pub struct TMino {
     color: [f32; 4],
 }
 
-impl Mino for TMino {
-    fn new() -> Self {
+impl Default for TMino {
+    fn default() -> Self {
         TMino {
             size: 3,
             shape: vec![
@@ -27,7 +26,9 @@ impl Mino for TMino {
             color: [0.5, 0.0, 0.5, 1.0],
         }
     }
+}
 
+impl Mino for TMino {
     fn get_size(&self) -> usize {
         self.size
     }
