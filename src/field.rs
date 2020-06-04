@@ -1,15 +1,15 @@
-/// 21$B!_(B10$B$N%F%H%j%9$N%U%#!<%k%I$rI=8=(B
-/// controller$B$+$i(Bstep$B$,8F$S=P$5$l$=$N$?$S$KMn2<=hM}$d:o=|=hM}$r9T$&M=Dj(B
+/// 21×10のテトリスのフィールドを表現
+/// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
 use crate::mino;
 use crate::mino::Mino;
 
-// $B%U%#!<%k%I$N3F%V%m%C%/(B
+// フィールドの各ブロック
 struct FieldBlock {
-    filled: bool,    // $B%V%m%C%/$K%_%N$,B8:_$9$k$+(B
-    color: [f32; 4], // $B%V%m%C%/$N?'(B
+    filled: bool,    // ブロックにミノが存在するか
+    color: [f32; 4], // ブロックの色
 }
 
-// $B%F%H%j%9$N%U%#!<%k%I(B
+// テトリスのフィールド
 struct Field {
     height: usize,
     width: usize,
@@ -17,7 +17,7 @@ struct Field {
 }
 
 impl Field {
-    /// Field$B$N%3%s%9%H%i%/%?(B
+    /// Fieldのコンストラクタ
     pub fn new(height: usize, width: usize) -> Field {
         let mut blocks: Vec<Vec<FieldBlock>> = Vec::new();
         for _ in 0..height {
@@ -45,9 +45,9 @@ impl Field {
         self.width
     }
 
-    // $B2#Ns$4$H$K(Bmino$B$,B7$C$F$$$k$+$rH=Dj$7B7$C$F$$$kNs$N%$%s%G%/%9$rJV$9(B
-    // $B:o=|$7$?$+$H$$$&>pJs$H:o=|$7$?Ns$N>pJs$rJV$9(B
-    // TODO : map, all, any$B$"$?$j$r;H$&$H$b$C$H4J7i$K=q$1$k$i$7$$$N$G=$@5(B
+    // 横列ごとにminoが揃っているかを判定し揃っている列のインデクスを返す
+    // 削除したかという情報と削除した列の情報を返す
+    // TODO : map, all, anyあたりを使うともっと簡潔に書けるらしいので修正
     pub fn is_filled_each_row(&self) -> Option<Vec<usize>> {
         let mut filled_rows = Vec::new();
 
@@ -101,8 +101,8 @@ impl<T: mino::Mino> ControlledMino<T> {
         self.grounded
     }
 
-    // $B%_%N$N<oN`$H8~$-$+$i%U%#!<%k%I>e$G$N>uBV$r@8@.$9$k(B
-    // $B%_%N$N8~$-$K$h$C$F(Bclosure$B$r@Z$jBX$($F$$$k(B
+    // ミノの種類と向きからフィールド上での状態を生成する
+    // ミノの向きによってclosureを切り替えている
     pub fn render(&self) -> Vec<Vec<bool>> {
         let size = self.mino.get_size();
         if size < 1 {
@@ -120,8 +120,8 @@ impl<T: mino::Mino> ControlledMino<T> {
             .collect()
     }
 
-    // TODO : $B2sE>8e$N>uBV$,IT@5$G$J$$$+$NH=Dj$rDI2C(B
-    // TODO : SRS$B$NF3F~(B
+    // TODO : 回転後の状態が不正でないかの判定を追加
+    // TODO : SRSの導入
     pub fn right_rotate(&mut self) {
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Rightward,
@@ -131,8 +131,8 @@ impl<T: mino::Mino> ControlledMino<T> {
         };
     }
 
-    // TODO : $B2sE>8e$N>uBV$,IT@5$G$J$$$+$NH=Dj$rDI2C(B
-    // TODO : SRS$B$NF3F~(B
+    // TODO : 回転後の状態が不正でないかの判定を追加
+    // TODO : SRSの導入
     pub fn left_rotate(&mut self) {
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Leftward,
@@ -142,8 +142,8 @@ impl<T: mino::Mino> ControlledMino<T> {
         }
     }
 
-    // move$B$OM=Ls8l$i$7$$$N$G;H$($J$$(B
-    // $B%_%N$r0\F0$5$;$k(B
+    // moveは予約語らしいので使えない
+    // ミノを移動させる
     pub fn move_mino(&mut self, field: &Field, ori: Orientation) {
         let size = self.mino.get_size();
         let rendered_mino = self.render();
@@ -166,7 +166,7 @@ impl<T: mino::Mino> ControlledMino<T> {
         println!("{} {}", moved_mino_x, moved_mino_y);
         println!("{:?}", rendered_mino);
 
-        // $B%_%N$r0l$D2<$K0\F0$5$;$k$3$H$,2DG=$+H=Dj(B
+        // ミノを一つ下に移動させることが可能か判定
         let mut movable = true;
         for i in 0..size {
             for j in 0..size {
@@ -174,8 +174,8 @@ impl<T: mino::Mino> ControlledMino<T> {
                     let x_in_field = j + moved_mino_x;
                     let y_in_field = i + moved_mino_y;
 
-                    // $B%U%#!<%k%I$N6-3&%A%'%C%/(B
-                    // $B0\F0@h$N%V%m%C%/$,Kd$^$C$F$$$J$$$+$r%A%'%C%/(B
+                    // フィールドの境界チェック
+                    // 移動先のブロックが埋まっていないかをチェック
                     if x_in_field >= field.get_width()
                         || y_in_field >= field.get_height()
                         || field.blocks[y_in_field][x_in_field].filled
@@ -205,7 +205,7 @@ mod field_tests {
 
     #[test]
     fn test_new() {
-        // block$B$,$9$Y$FKd$^$C$F$$$J$$$+$r%F%9%H(B
+        // blockがすべて埋まっていないかをテスト
         let f = Field::new(5, 4);
         for h in 0..f.get_height() {
             for w in 0..f.get_width() {
@@ -240,7 +240,7 @@ mod field_tests {
                 want: Some(vec![0, 1, 2, 3, 4]),
             },
             TestCase {
-                // $B0lIt$,Kd$^$C$F$$$k(B
+                // 一部が埋まっている
                 name: "hand craft".to_string(),
                 x: vec![
                     vec![true, true, true, true],
@@ -254,7 +254,7 @@ mod field_tests {
         ];
 
         for case in cases {
-            // block$B$,$9$Y$FKd$^$C$F$$$J$$$+$r%F%9%H(B
+            // blockがすべて埋まっていないかをテスト
             let mut f = Field::new(test_height, test_width);
             for h in 0..f.get_height() {
                 for w in 0..f.get_width() {
