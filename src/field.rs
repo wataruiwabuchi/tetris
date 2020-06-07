@@ -1,16 +1,15 @@
 /// 21×10のテトリスのフィールドを表現
 /// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
 use crate::mino;
-use crate::mino::Mino;
 
 // フィールドの各ブロック
-struct FieldBlock {
-    filled: bool,    // ブロックにミノが存在するか
-    color: [f32; 4], // ブロックの色
+pub struct FieldBlock {
+    pub filled: bool, // ブロックにミノが存在するか
+    color: [f32; 4],  // ブロックの色
 }
 
 // テトリスのフィールド
-struct Field {
+pub struct Field {
     height: usize,
     width: usize,
     blocks: Vec<Vec<FieldBlock>>,
@@ -43,6 +42,10 @@ impl Field {
 
     pub fn get_width(&self) -> usize {
         self.width
+    }
+
+    pub fn get_block(&mut self, row: usize, col: usize) -> &mut FieldBlock {
+        &mut self.blocks[row][col]
     }
 
     // 横列ごとにminoが揃っているかを判定し揃っている列のインデクスを返す
