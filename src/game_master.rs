@@ -78,4 +78,28 @@ impl GameMaster {
 
         // 画面描写
     }
+
+    /// ControlledMinoをFieldに投影
+    pub fn project_controlled_mino(&mut self) -> Vec<Vec<bool>> {
+        let width = self.field.get_width();
+        let height = self.field.get_height();
+        let mut projected = vec![vec![false; width]; height];
+        for i in 0..height {
+            for j in 0..width {
+                projected[i][j] = self.field.get_block(i, j).filled;
+            }
+        }
+
+        let x = self.cm.get_x();
+        let y = self.cm.get_y();
+        let rendered_mino = self.cm.render();
+        for i in 0..rendered_mino.len() {
+            for j in 0..rendered_mino[i].len() {
+                if i + y < height && j + x < width {
+                    projected[i + y][j + x] |= rendered_mino[i][j];
+                }
+            }
+        }
+        projected
+    }
 }
