@@ -1,6 +1,6 @@
+use crate::mino;
 /// 21×10のテトリスのフィールドを表現
 /// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
-use crate::mino;
 
 // フィールドの各ブロック
 pub struct FieldBlock {
@@ -83,15 +83,24 @@ pub enum Orientation {
     Leftward,
 }
 
-struct ControlledMino<T: mino::Mino> {
+pub struct ControlledMino {
     x: usize,
     y: usize,
-    mino: T,
     ori: Orientation,
     grounded: bool,
+    mino: Box<dyn mino::Mino>,
 }
 
-impl<T: mino::Mino> ControlledMino<T> {
+impl ControlledMino {
+    pub fn new(x: usize, mino: Box<dyn mino::Mino>) -> Self {
+        ControlledMino {
+            x: x,
+            y: 0,
+            ori: Orientation::Upward,
+            grounded: false,
+            mino: mino,
+        }
+    }
     pub fn get_x(&self) -> usize {
         self.x
     }
@@ -282,7 +291,7 @@ mod controlledmino_tests {
     fn test_render() {
         struct TestCase {
             name: String,
-            x: ControlledMino<mino::TMino>,
+            x: ControlledMino,
             want: Vec<Vec<bool>>,
         };
 
@@ -292,7 +301,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -307,9 +316,9 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::default(),
                     ori: Orientation::Rightward,
                     grounded: false,
+                    mino: Box::new(mino::TMino::default()),
                 },
                 want: vec![
                     vec![false, true, false],
@@ -322,7 +331,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Downward,
                     grounded: false,
                 },
@@ -337,7 +346,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Leftward,
                     grounded: false,
                 },
@@ -388,7 +397,7 @@ mod controlledmino_tests {
         let mut m = ControlledMino {
             x: 0,
             y: 0,
-            mino: mino::TMino::default(),
+            mino: Box::new(mino::TMino::default()),
             ori: Orientation::Upward,
             grounded: false,
         };
@@ -439,7 +448,7 @@ mod controlledmino_tests {
         let mut m = ControlledMino {
             x: 0,
             y: 0,
-            mino: mino::TMino::default(),
+            mino: Box::new(mino::TMino::default()),
             ori: Orientation::Upward,
             grounded: false,
         };
@@ -460,7 +469,7 @@ mod controlledmino_tests {
     fn test_move() {
         struct TestCase {
             name: String,
-            x: ControlledMino<mino::TMino>,
+            x: ControlledMino,
             move_ori: Orientation,
             want: (usize, usize, bool),
         };
@@ -481,7 +490,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -493,7 +502,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 0,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -505,7 +514,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 1,
                     y: 0,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -517,7 +526,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 1,
                     y: 1,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -529,7 +538,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 3,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -541,7 +550,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 3,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
@@ -553,7 +562,7 @@ mod controlledmino_tests {
                 x: ControlledMino {
                     x: 0,
                     y: 3,
-                    mino: mino::TMino::default(),
+                    mino: Box::new(mino::TMino::default()),
                     ori: Orientation::Upward,
                     grounded: false,
                 },
