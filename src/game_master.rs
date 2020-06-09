@@ -8,7 +8,7 @@ use crate::next_generator::NextGenerator;
 pub struct GameMaster {
     pub field: field::Field, // テトリスのフィールド
     //cm: field::ControlledMino<dyn mino::Mino>, // 操作しているミノ
-    cm: Box<field::ControlledMino>, // 操作しているミノ
+    pub cm: Box<field::ControlledMino>, // 操作しているミノ
     //timer: Timer, // クロック生成器
     // TODO: gbgの実装
     //gbg : GarbageBlockGenerator, // おじゃまブロックの出現を管理
