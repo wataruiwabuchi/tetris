@@ -1,9 +1,14 @@
 use crate::mino;
+use std::cmp::Reverse;
+use std::collections::HashSet;
+use std::iter::FromIterator;
 /// 21×10のテトリスのフィールドを表現
 /// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
 
 // フィールドの各ブロック
 pub struct FieldBlock {
+    // TODO: filledも本来はprivateにしたほうがいい？
+    // 自由にミノを配置したりを考えるとpubのほうが使いやすい？
     pub filled: bool, // ブロックにミノが存在するか
     color: [f32; 4],  // ブロックの色
 }
@@ -48,8 +53,8 @@ impl Field {
         &mut self.blocks[row][col]
     }
 
-    // 横列ごとにminoが揃っているかを判定し揃っている列のインデクスを返す
-    // 削除したかという情報と削除した列の情報を返す
+    /// 横列ごとにminoが揃っているかを判定し揃っている列のインデクスを返す
+    /// アニメーション処理などが入ることを考慮して実際に消す処理とは分離してある
     // TODO : map, all, anyあたりを使うともっと簡潔に書けるらしいので修正
     pub fn is_filled_each_row(&self) -> Option<Vec<usize>> {
         let mut filled_rows = Vec::new();
@@ -73,6 +78,45 @@ impl Field {
         }
 
         return Some(filled_rows);
+    }
+
+    /// 指定されたインデックスのlineを削除
+    pub fn delete_lines(&mut self, deleted_ids: Vec<usize>) {
+        // TODO: 実装に納得がいっていない，もっときれいな実装はないか
+        let set_deleted_ids: HashSet<_> = deleted_ids.iter().copied().collect();
+        let ids: HashSet<_> = (0..self.height).collect();
+        let mut left_ids: Vec<_> = Vec::from_iter(ids.difference(&set_deleted_ids)); // 残すlineのindices
+
+        left_ids.sort_by_key(|v| Reverse(*v));
+
+        // 消すlineを詰めながらblockの中身をコピー
+        let mut cur_line = (self.height - 1) as i32;
+        for i in left_ids.iter() {
+            println!("{}", **i);
+            // フィールドの下部からコピー
+            for j in 0..self.width {
+                self.blocks[cur_line as usize][j].filled = self.blocks[**i][j].filled;
+                self.blocks[cur_line as usize][j].color[0] = self.blocks[**i][j].color[0];
+                self.blocks[cur_line as usize][j].color[1] = self.blocks[**i][j].color[1];
+                self.blocks[cur_line as usize][j].color[2] = self.blocks[**i][j].color[2];
+                self.blocks[cur_line as usize][j].color[3] = self.blocks[**i][j].color[3];
+            }
+            cur_line -= 1;
+        }
+
+        // 消したことによって空きができたフィールドの上部に空のblockを配置
+        if cur_line > 0 {
+            for i in 0..cur_line as usize + 1 {
+                println!("{} test", i);
+                for j in 0..self.width {
+                    self.blocks[i][j].filled = false;
+                    self.blocks[i][j].color[0] = 0.0;
+                    self.blocks[i][j].color[1] = 0.0;
+                    self.blocks[i][j].color[2] = 0.0;
+                    self.blocks[i][j].color[3] = 0.0;
+                }
+            }
+        }
     }
 }
 
@@ -279,6 +323,92 @@ mod field_tests {
                 }
                 None => assert_eq!(None, case.want, "failed {}", case.name),
             }
+        }
+    }
+
+    #[test]
+    fn test_delete_lines() {
+        // TODO: 色に関するテストも追加
+        let test_height = 5;
+        let test_width = 4;
+
+        let input_field = vec![
+            vec![true, true, true, true],
+            vec![false, false, false, false],
+            vec![false, true, true, false],
+            vec![true, true, true, true],
+            vec![true, false, false, false],
+        ];
+
+        struct TestCase {
+            name: String,
+            x: Vec<usize>,
+            want: Vec<Vec<bool>>,
+        };
+
+        let cases = vec![
+            TestCase {
+                name: "delete all".to_string(),
+                x: (0..test_height).collect(),
+                want: vec![vec![false; test_width]; test_height],
+            },
+            TestCase {
+                name: "delete all with shuffled indices".to_string(),
+                x: vec![3, 2, 0, 4, 1],
+                want: vec![vec![false; test_width]; test_height],
+            },
+            TestCase {
+                name: "not delete".to_string(),
+                x: vec![],
+                want: vec![
+                    vec![true, true, true, true],
+                    vec![false, false, false, false],
+                    vec![false, true, true, false],
+                    vec![true, true, true, true],
+                    vec![true, false, false, false],
+                ],
+            },
+            TestCase {
+                name: "hand craft1".to_string(),
+                x: vec![0, 3],
+                want: vec![
+                    vec![false, false, false, false],
+                    vec![false, false, false, false],
+                    vec![false, false, false, false],
+                    vec![false, true, true, false],
+                    vec![true, false, false, false],
+                ],
+            },
+            TestCase {
+                name: "hand craft2".to_string(),
+                x: vec![4, 3],
+                want: vec![
+                    vec![false, false, false, false],
+                    vec![false, false, false, false],
+                    vec![true, true, true, true],
+                    vec![false, false, false, false],
+                    vec![false, true, true, false],
+                ],
+            },
+        ];
+
+        for case in cases {
+            let mut f = Field::new(test_height, test_width);
+            for h in 0..f.get_height() {
+                for w in 0..f.get_width() {
+                    f.blocks[h][w].filled = input_field[h][w];
+                }
+            }
+
+            f.delete_lines(case.x);
+
+            let mut y = vec![vec![false; test_width]; test_height];
+            for h in 0..f.get_height() {
+                for w in 0..f.get_width() {
+                    y[h][w] = f.blocks[h][w].filled;
+                }
+            }
+            assert_eq!(y, case.want, "case {}: failed", case.name)
         }
     }
 }
