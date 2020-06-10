@@ -54,10 +54,14 @@ mod defaultnextgenerator_tests {
             rand_gen: rand_gen,
         };
 
-        // TODO: もう少しちゃんとしたテストをしたほうがいいかも？
-        // 取り出した値がすべてmino::Minoになっているかの判定はしてもいいかも？
         for _ in 0..10 {
             nx.generate();
         }
     }
+
+    // TODO: nextの生成が7個1セットでできているかもテストしたい
+    // rustは型の同一性判定が難しいらしいのでうまい実装ができなかった
+    // 現在思いついているあまり良くない方法(testのためだけに実装することになってしまう)
+    // 1: 型判定用のfieldをstructに追加
+    // 2: 同一性判定のためのtraitを実装
 }
