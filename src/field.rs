@@ -49,6 +49,10 @@ impl Field {
         self.width
     }
 
+    // TODO: set関数の実装
+    // 現状だと参照しかするつもりのない関数から呼ぶ場合もmutにしなければならない
+    // set関数を実装しgetからmutをなくせば，getしか呼び出さない関数にはmutをつけない状態で渡しておくことができる
+    // こちらのほうが適切なアクセス管理ができていると考えられる
     pub fn get_block(&mut self, row: usize, col: usize) -> &mut FieldBlock {
         &mut self.blocks[row][col]
     }
@@ -223,13 +227,78 @@ impl ControlledMino {
     }
 
     // TODO : SRSの導入
-    pub fn right_rotate(&mut self) {
+    // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
+    pub fn right_rotate_with_srs(&mut self, field: &mut Field) {
+        let before_ori = self.ori;
+
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Rightward,
             Orientation::Rightward => Orientation::Downward,
             Orientation::Downward => Orientation::Leftward,
             Orientation::Leftward => Orientation::Upward,
         };
+
+        // Iミノの場合
+        // TODO: 型の判定などを用いてもっと直接的に判定したい
+        if self.mino.get_size() == 4 {
+            // TODO: IミノのSRSを実装
+            return;
+        }
+
+        // 参考: https://tetrisch.github.io/main/srs.html
+        // ミノの中心を基準に考えないと規則にしたがって考えるのは困難
+        // Iミノ以外の処理
+        let delta = [[0, 0], [0, 1], [-1, 1], [-2, 0], [-2, 1]]; // SRSの移動時の差分
+                                                                 // 元の向きからどの順序で中心が移動するかを判定
+        for d in delta.iter() {
+            let dy = d[0] * (self.ori as i64 % 2) * 2 - 1;
+            let dx = d[1] * (self.ori as i64 / 2) * 2 - 1;
+
+            // 一度基準座標を左上から中心に変更
+            // 中心を基準にSRSの移動を実行
+            // 基準座標を左上に戻す
+            // SRSの移動可能判定を行う
+            let moved_y = self.y as i64 + dy;
+            let moved_x = self.x as i64 + dx;
+
+            let rendered_mino = self.render();
+            let mut invalid_movement = false;
+            for i in 0..self.mino.get_size() {
+                for j in 0..self.mino.get_size() {
+                    if !rendered_mino[i][j] {
+                        continue;
+                    }
+
+                    if (moved_y + i as i64) < 0 || (moved_y + i as i64) >= field.get_height() as i64
+                    {
+                        invalid_movement = true;
+                        break;
+                    }
+                    if (moved_x + j as i64) < 0 || (moved_x + j as i64) >= field.get_width() as i64
+                    {
+                        invalid_movement = true;
+                        break;
+                    }
+
+                    if field
+                        .get_block(moved_y as usize + i, moved_x as usize + j)
+                        .filled
+                    {
+                        invalid_movement = true;
+                        break;
+                    }
+                }
+            }
+
+            if !invalid_movement {
+                self.y = moved_y as usize;
+                self.x = moved_x as usize;
+                return;
+            }
+        }
+
+        // 回転不可能な場合
+        self.ori = before_ori;
     }
 
     // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
