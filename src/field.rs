@@ -120,6 +120,7 @@ impl Field {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum Orientation {
     Upward,
     Rightward,
@@ -176,7 +177,51 @@ impl ControlledMino {
             .collect()
     }
 
-    // TODO : 回転後の状態が不正でないかの判定を追加
+    // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
+    pub fn right_rotate(&mut self, field: &mut Field) {
+        let before_ori = self.ori;
+
+        self.ori = match &self.ori {
+            Orientation::Upward => Orientation::Rightward,
+            Orientation::Rightward => Orientation::Downward,
+            Orientation::Downward => Orientation::Leftward,
+            Orientation::Leftward => Orientation::Upward,
+        };
+
+        let rendered_mino = self.render();
+        let mut invalid_movement = false;
+        let y = self.y as i64;
+        let x = self.x as i64;
+        for i in 0..self.mino.get_size() {
+            for j in 0..self.mino.get_size() {
+                if !rendered_mino[i][j] {
+                    continue;
+                }
+
+                if (y + i as i64) < 0 || (y + i as i64) >= field.get_height() as i64 {
+                    invalid_movement = true;
+                    break;
+                }
+                if (x + j as i64) < 0 || (x + j as i64) >= field.get_width() as i64 {
+                    invalid_movement = true;
+                    break;
+                }
+
+                if field.get_block(y as usize + i, x as usize + j).filled {
+                    invalid_movement = true;
+                    break;
+                }
+            }
+        }
+
+        if !invalid_movement {
+            return;
+        }
+
+        // 回転不可能な場合
+        self.ori = before_ori;
+    }
+
     // TODO : SRSの導入
     pub fn right_rotate(&mut self) {
         self.ori = match &self.ori {
@@ -187,15 +232,50 @@ impl ControlledMino {
         };
     }
 
-    // TODO : 回転後の状態が不正でないかの判定を追加
+    // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
     // TODO : SRSの導入
-    pub fn left_rotate(&mut self) {
+    pub fn left_rotate(&mut self, field: &mut Field) {
+        let before_ori = self.ori;
+
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Leftward,
             Orientation::Rightward => Orientation::Upward,
             Orientation::Downward => Orientation::Rightward,
             Orientation::Leftward => Orientation::Downward,
+        };
+
+        let rendered_mino = self.render();
+        let mut invalid_movement = false;
+        let y = self.y as i64;
+        let x = self.x as i64;
+        for i in 0..self.mino.get_size() {
+            for j in 0..self.mino.get_size() {
+                if !rendered_mino[i][j] {
+                    continue;
+                }
+
+                if (y + i as i64) < 0 || (y + i as i64) >= field.get_height() as i64 {
+                    invalid_movement = true;
+                    break;
+                }
+                if (x + j as i64) < 0 || (x + j as i64) >= field.get_width() as i64 {
+                    invalid_movement = true;
+                    break;
+                }
+
+                if field.get_block(y as usize + i, x as usize + j).filled {
+                    invalid_movement = true;
+                    break;
+                }
+            }
         }
+
+        if !invalid_movement {
+            return;
+        }
+
+        // 回転不可能な場合
+        self.ori = before_ori;
     }
 
     // moveは予約語らしいので使えない
@@ -493,34 +573,114 @@ mod controlledmino_tests {
         }
     }
 
+    // TODO: SRSのテスト方法を考える
+    // 何も工夫しない場合のテストしなければならないパターン数
+    // 6(ミノ) * 6(移動) * 4(上下左右) * 2(回転方向) = 288
+    // テストするためのアイデア
+    // 1: 代表的な回転入れのパターンのみ
+    // 2: 何らかの方法で機械的にパターンを生成
+    // 3: 気合で全部書く
     #[test]
     fn test_right_rotate() {
         struct TestCase {
             name: String,
             x: Orientation,
+            field: Vec<Vec<bool>>,
             want: i32,
         };
 
         let cases = vec![
             TestCase {
-                name: "upward".to_string(),
+                name: "valid upward".to_string(),
                 x: Orientation::Upward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
                 want: 1,
             },
             TestCase {
-                name: "rightward".to_string(),
+                name: "invalid upward".to_string(),
+                x: Orientation::Upward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, true, false],
+                ],
+                want: 0,
+            },
+            TestCase {
+                name: "invalid bordering upward".to_string(),
+                x: Orientation::Upward,
+                field: vec![vec![false, false, false], vec![false, false, false]],
+                want: 0,
+            },
+            TestCase {
+                name: "valid rightward".to_string(),
                 x: Orientation::Rightward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
                 want: 2,
             },
             TestCase {
-                name: "downward".to_string(),
+                name: "invalid rightward".to_string(),
+                x: Orientation::Rightward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![true, false, false],
+                    vec![false, false, false],
+                ],
+                want: 1,
+            },
+            TestCase {
+                name: "valid downward".to_string(),
                 x: Orientation::Downward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
                 want: 3,
             },
             TestCase {
-                name: "leftward".to_string(),
+                name: "invalid downward".to_string(),
+                x: Orientation::Downward,
+                field: vec![
+                    vec![false, true, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
+                want: 2,
+            },
+            TestCase {
+                name: "valid leftward".to_string(),
                 x: Orientation::Leftward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
                 want: 0,
+            },
+            TestCase {
+                name: "invalid leftward".to_string(),
+                x: Orientation::Leftward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, true],
+                    vec![false, false, false],
+                ],
+                want: 3,
+            },
+            TestCase {
+                name: "invalid bordering leftward".to_string(),
+                x: Orientation::Leftward,
+                field: vec![vec![false, false], vec![false, false], vec![false, false]],
+                want: 3,
             },
         ];
 
@@ -532,8 +692,16 @@ mod controlledmino_tests {
             grounded: false,
         };
         for case in cases {
+            let height = case.field.len();
+            let width = case.field[0].len();
+            let mut f = Field::new(height, width);
+            for i in 0..height {
+                for j in 0..width {
+                    f.get_block(i, j).filled = case.field[i][j];
+                }
+            }
             m.ori = case.x;
-            m.right_rotate();
+            m.right_rotate(&mut f);
             let result = match m.ori {
                 Orientation::Upward => 0,
                 Orientation::Rightward => 1,
@@ -549,29 +717,102 @@ mod controlledmino_tests {
         struct TestCase {
             name: String,
             x: Orientation,
+            field: Vec<Vec<bool>>,
             want: i32,
         };
 
         let cases = vec![
             TestCase {
-                name: "upward".to_string(),
+                name: "valid upward".to_string(),
                 x: Orientation::Upward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
                 want: 3,
             },
             TestCase {
-                name: "rightward".to_string(),
-                x: Orientation::Rightward,
+                name: "invalid upward".to_string(),
+                x: Orientation::Upward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, true, false],
+                ],
                 want: 0,
             },
             TestCase {
-                name: "downward".to_string(),
-                x: Orientation::Downward,
+                name: "invalid bordering upward".to_string(),
+                x: Orientation::Upward,
+                field: vec![vec![false, false, false], vec![false, false, false]],
+                want: 0,
+            },
+            TestCase {
+                name: "valid rightward".to_string(),
+                x: Orientation::Rightward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
+                want: 0,
+            },
+            TestCase {
+                name: "invalid rightward".to_string(),
+                x: Orientation::Rightward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![true, false, false],
+                    vec![false, false, false],
+                ],
                 want: 1,
             },
             TestCase {
-                name: "leftward".to_string(),
-                x: Orientation::Leftward,
+                name: "valid downward".to_string(),
+                x: Orientation::Downward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
+                want: 1,
+            },
+            TestCase {
+                name: "invalid downward".to_string(),
+                x: Orientation::Downward,
+                field: vec![
+                    vec![false, true, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
                 want: 2,
+            },
+            TestCase {
+                name: "valid leftward".to_string(),
+                x: Orientation::Leftward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, false],
+                    vec![false, false, false],
+                ],
+                want: 2,
+            },
+            TestCase {
+                name: "invalid leftward".to_string(),
+                x: Orientation::Leftward,
+                field: vec![
+                    vec![false, false, false],
+                    vec![false, false, true],
+                    vec![false, false, false],
+                ],
+                want: 3,
+            },
+            TestCase {
+                name: "invalid bordering leftward".to_string(),
+                x: Orientation::Leftward,
+                field: vec![vec![false, false], vec![false, false], vec![false, false]],
+                want: 3,
             },
         ];
 
@@ -583,8 +824,16 @@ mod controlledmino_tests {
             grounded: false,
         };
         for case in cases {
+            let height = case.field.len();
+            let width = case.field[0].len();
+            let mut f = Field::new(height, width);
+            for i in 0..height {
+                for j in 0..width {
+                    f.get_block(i, j).filled = case.field[i][j];
+                }
+            }
             m.ori = case.x;
-            m.left_rotate();
+            m.left_rotate(&mut f);
             let result = match m.ori {
                 Orientation::Upward => 0,
                 Orientation::Rightward => 1,
