@@ -2,6 +2,19 @@ use crate::field;
 use crate::mino;
 use crate::next_generator;
 use crate::next_generator::NextGenerator;
+use std::time::Instant;
+
+pub struct TetrisParams {
+    drop_interval: u64, // millisecondを想定
+}
+
+impl Default for TetrisParams {
+    fn default() -> Self {
+        TetrisParams {
+            drop_interval: 1500,
+        }
+    }
+}
 
 // ゲーム進行や各要素を管理
 // 各インタフェースだけでも先に決めておかないとこっちがつらいかも？
@@ -14,14 +27,22 @@ pub struct GameMaster {
     //gbg : GarbageBlockGenerator, // おじゃまブロックの出現を管理
     //params : Parameter, // 各種パラメータ
     ng: Box<dyn next_generator::NextGenerator>, // ネクスト生成器
-                                                // TODO: holdの実装
-                                                //hold : HoldMino, // ホールド
-                                                //controller: Controller, // ユーザインタフェース（コントローラー）
-                                                //renderer : Renderer, // 無限ループするなら画面描写もこちらに持たせておいたほうがいい？（インタフェース化はしておく）
+    // TODO: holdの実装
+    //hold : HoldMino, // ホールド
+    //controller: Controller, // ユーザインタフェース（コントローラー）
+    //renderer : Renderer, // 無限ループするなら画面描写もこちらに持たせておいたほうがいい？（インタフェース化はしておく）
+    start_time_in_milli: i32,
+    count_drop: i32,
+    params: TetrisParams,
 }
 
 impl GameMaster {
-    pub fn new(height: usize, width: usize, rand_gen: Box<dyn FnMut() -> usize>) -> GameMaster {
+    pub fn new(
+        height: usize,
+        width: usize,
+        rand_gen: Box<dyn FnMut() -> usize>,
+        start_time_in_milli: i32,
+    ) -> GameMaster {
         let mut ng = next_generator::DefaultNextGenerator {
             buffer: vec![],
             rand_gen: rand_gen,
@@ -30,17 +51,20 @@ impl GameMaster {
             field: field::Field::new(height, width),
             cm: Box::new(field::ControlledMino::new((width / 2) as i64, ng.next())), // TODO: ContorolledMinoの幅を考慮する必要
             ng: Box::new(ng),
+            start_time_in_milli: start_time_in_milli,
+            count_drop: 0,
+            params: TetrisParams::default(),
         }
     }
-    pub fn tick(&mut self) {
-        // TODO: loopの繰り返し回数で行うか時間を計測して行うかは議論の余地がある
-        //self.field.get_block(0, 0).filled = true;
-
+    pub fn tick(&mut self, current_time_in_milli: i32) {
+        let elapsed_time_in_milli = current_time_in_milli - self.start_time_in_milli;
         // loop回数の場合はloop内の実行時間の影響を受ける
         // 時間の場合は何回処理を行ったかを記録しておく必要がある？
-        //let mut clk = 0;
         // 落下
-        self.cm.move_mino(&self.field, field::Orientation::Downward);
+        if elapsed_time_in_milli / self.params.drop_interval as i32 != self.count_drop {
+            self.cm.move_mino(&self.field, field::Orientation::Downward);
+            self.count_drop = elapsed_time_in_milli / self.params.drop_interval as i32;
+        }
 
         if self.cm.get_grounded() {
             // ControlledMinoの位置を確定
