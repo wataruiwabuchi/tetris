@@ -19,10 +19,42 @@ impl DefaultNextGenerator {
     ///  bufferの中身が0の場合に実行
     /// 7個1セットのミノを生成してnextのbufferに詰める
     fn generate(&mut self) {
-        // TODO: ランダムに生成する
-        // TODO: TMino以外も生成する
-        // let rand_value = (self.rand_gen)() % self.field.get_height();
-        self.buffer.push(Box::new(mino::TMino::default()));
+        let num_mino_type = 7;
+        let mut indices: Vec<usize> = (0..num_mino_type).collect();
+        for _ in 0..num_mino_type {
+            let i1 = (self.rand_gen)() % num_mino_type;
+            let i2 = (self.rand_gen)() % num_mino_type;
+            let tmp = indices[i1];
+            indices[i1] = indices[i2];
+            indices[i2] = tmp;
+        }
+
+        for i in indices {
+            match i {
+                0 => {
+                    self.buffer.push(Box::new(mino::TMino::default()));
+                }
+                1 => {
+                    self.buffer.push(Box::new(mino::SMino::default()));
+                }
+                2 => {
+                    self.buffer.push(Box::new(mino::ZMino::default()));
+                }
+                3 => {
+                    self.buffer.push(Box::new(mino::LMino::default()));
+                }
+                4 => {
+                    self.buffer.push(Box::new(mino::JMino::default()));
+                }
+                5 => {
+                    self.buffer.push(Box::new(mino::IMino::default()));
+                }
+                6 => {
+                    self.buffer.push(Box::new(mino::OMino::default()));
+                }
+                _ => {}
+            }
+        }
     }
 }
 
