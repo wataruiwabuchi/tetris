@@ -133,15 +133,15 @@ pub enum Orientation {
 }
 
 pub struct ControlledMino {
-    x: usize,
-    y: usize,
+    x: i64, // 左上座標なのでマイナスの値をとりうる
+    y: i64,
     ori: Orientation,
     grounded: bool,
     mino: Box<dyn mino::Mino>,
 }
 
 impl ControlledMino {
-    pub fn new(x: usize, mino: Box<dyn mino::Mino>) -> Self {
+    pub fn new(x: i64, mino: Box<dyn mino::Mino>) -> Self {
         ControlledMino {
             x: x,
             y: 0,
@@ -150,11 +150,11 @@ impl ControlledMino {
             mino: mino,
         }
     }
-    pub fn get_x(&self) -> usize {
+    pub fn get_x(&self) -> i64 {
         self.x
     }
 
-    pub fn get_y(&self) -> usize {
+    pub fn get_y(&self) -> i64 {
         self.y
     }
 
@@ -291,8 +291,8 @@ impl ControlledMino {
             }
 
             if !invalid_movement {
-                self.y = moved_y as usize;
-                self.x = moved_x as usize;
+                self.y = moved_y;
+                self.x = moved_x;
                 return;
             }
         }
@@ -352,49 +352,44 @@ impl ControlledMino {
     pub fn move_mino(&mut self, field: &Field, ori: Orientation) {
         let size = self.mino.get_size();
         let rendered_mino = self.render();
-        let mut moved_mino_x = self.get_x();
-        let mut moved_mino_y = self.get_y();
+        let mut moved_x = self.get_x() as i64;
+        let mut moved_y = self.get_y() as i64;
 
         match ori {
             Orientation::Upward => return,
-            Orientation::Rightward => moved_mino_x += 1,
-            Orientation::Downward => moved_mino_y += 1,
-            Orientation::Leftward => {
-                if moved_mino_x == 0 {
-                    return;
-                } else {
-                    moved_mino_x -= 1
-                }
-            }
+            Orientation::Rightward => moved_x += 1,
+            Orientation::Downward => moved_y += 1,
+            Orientation::Leftward => moved_x -= 1,
         }
-
-        println!("{} {}", moved_mino_x, moved_mino_y);
-        println!("{:?}", rendered_mino);
 
         // ミノを一つ下に移動させることが可能か判定
         let mut movable = true;
         for i in 0..size {
             for j in 0..size {
-                if rendered_mino[i][j] {
-                    let x_in_field = j + moved_mino_x;
-                    let y_in_field = i + moved_mino_y;
+                if !rendered_mino[i][j] {
+                    continue;
+                }
 
-                    // フィールドの境界チェック
-                    // 移動先のブロックが埋まっていないかをチェック
-                    if x_in_field >= field.get_width()
-                        || y_in_field >= field.get_height()
-                        || field.blocks[y_in_field][x_in_field].filled
-                    {
-                        movable = false;
-                        break;
-                    }
+                let x_in_field = j as i64 + moved_x;
+                let y_in_field = i as i64 + moved_y;
+
+                // フィールドの境界チェック
+                // 移動先のブロックが埋まっていないかをチェック
+                if x_in_field < 0
+                    || x_in_field >= field.get_width() as i64
+                    || y_in_field < 0
+                    || y_in_field >= field.get_height() as i64
+                    || field.blocks[y_in_field as usize][x_in_field as usize].filled
+                {
+                    movable = false;
+                    break;
                 }
             }
         }
 
         if movable {
-            self.x = moved_mino_x;
-            self.y = moved_mino_y;
+            self.x = moved_x;
+            self.y = moved_y;
         } else {
             match ori {
                 Orientation::Downward => self.grounded = true,
@@ -919,7 +914,7 @@ mod controlledmino_tests {
             name: String,
             x: ControlledMino,
             move_ori: Orientation,
-            want: (usize, usize, bool),
+            want: (i64, i64, bool),
         };
 
         let field_height = 5;
@@ -1016,6 +1011,30 @@ mod controlledmino_tests {
                 },
                 move_ori: Orientation::Downward,
                 want: (0, 3, true),
+            },
+            TestCase {
+                name: "フィールド境界のため落下不可能".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 3,
+                    mino: Box::new(mino::TMino::default()),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Downward,
+                want: (0, 3, true),
+            },
+            TestCase {
+                name: "filled=falseの部分がフィールド外にはみ出す".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 0,
+                    mino: Box::new(mino::TMino::default()),
+                    ori: Orientation::Rightward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Leftward,
+                want: (-1, 0, false),
             },
         ];
 

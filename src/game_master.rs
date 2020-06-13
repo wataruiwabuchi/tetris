@@ -28,7 +28,7 @@ impl GameMaster {
         };
         GameMaster {
             field: field::Field::new(height, width),
-            cm: Box::new(field::ControlledMino::new(width / 2, ng.next())), // TODO: ContorolledMinoの幅を考慮する必要
+            cm: Box::new(field::ControlledMino::new((width / 2) as i64, ng.next())), // TODO: ContorolledMinoの幅を考慮する必要
             ng: Box::new(ng),
         }
     }
@@ -47,11 +47,13 @@ impl GameMaster {
             let rendered_mino = self.cm.render();
             for i in 0..rendered_mino.len() {
                 for j in 0..rendered_mino[i].len() {
-                    if i + self.cm.get_y() < self.field.get_height()
-                        && j + self.cm.get_x() < self.field.get_width()
+                    if i as i64 + self.cm.get_y() >= 0
+                        && i as i64 + self.cm.get_y() < self.field.get_height() as i64
+                        && j as i64 + self.cm.get_x() >= 0
+                        && j as i64 + self.cm.get_x() < self.field.get_width() as i64
                     {
                         self.field
-                            .get_block(i + self.cm.get_y(), j + self.cm.get_x())
+                            .get_block(i + self.cm.get_y() as usize, j + self.cm.get_x() as usize)
                             .filled |= rendered_mino[i][j];
                     }
                 }
@@ -59,7 +61,7 @@ impl GameMaster {
 
             // ControlledMinoの切り替え
             self.cm = Box::new(field::ControlledMino::new(
-                self.field.get_width() / 2, // ControlledMinoの幅を考慮
+                (self.field.get_width() / 2) as i64, // ControlledMinoの幅を考慮
                 self.ng.next(),
             ));
         }
@@ -95,8 +97,12 @@ impl GameMaster {
         let rendered_mino = self.cm.render();
         for i in 0..rendered_mino.len() {
             for j in 0..rendered_mino[i].len() {
-                if i + y < height && j + x < width {
-                    projected[i + y][j + x] |= rendered_mino[i][j];
+                if i as i64 + y >= 0
+                    && i as i64 + y < height as i64
+                    && j as i64 + x >= 0
+                    && j as i64 + x < width as i64
+                {
+                    projected[i + y as usize][j + x as usize] |= rendered_mino[i][j];
                 }
             }
         }
