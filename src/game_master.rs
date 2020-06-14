@@ -4,14 +4,28 @@ use crate::next_generator;
 use crate::next_generator::NextGenerator;
 use std::time::Instant;
 
+#[derive(Copy, Clone)]
+pub enum Keyboard {
+    Rightrotate,
+    Leftrotate,
+    Softdrop,
+    Harddrop,
+    Rightmove,
+    Leftmove,
+    Hold,
+    Other,
+}
+
 pub struct TetrisParams {
-    drop_interval: u64, // millisecondを想定
+    drop_interval: u64,     // millisecondを想定
+    softdrop_interval: u64, // millisecondを想定
 }
 
 impl Default for TetrisParams {
     fn default() -> Self {
         TetrisParams {
             drop_interval: 1500,
+            softdrop_interval: 50,
         }
     }
 }
@@ -33,6 +47,7 @@ pub struct GameMaster {
     //renderer : Renderer, // 無限ループするなら画面描写もこちらに持たせておいたほうがいい？（インタフェース化はしておく）
     start_time_in_milli: i32,
     count_drop: i32,
+    count_softdrop: i32,
     params: TetrisParams,
 }
 
@@ -53,10 +68,11 @@ impl GameMaster {
             ng: Box::new(ng),
             start_time_in_milli: start_time_in_milli,
             count_drop: 0,
+            count_softdrop: 0,
             params: TetrisParams::default(),
         }
     }
-    pub fn tick(&mut self, current_time_in_milli: i32) {
+    pub fn tick(&mut self, current_time_in_milli: i32, key: Keyboard) {
         let elapsed_time_in_milli = current_time_in_milli - self.start_time_in_milli;
         // loop回数の場合はloop内の実行時間の影響を受ける
         // 時間の場合は何回処理を行ったかを記録しておく必要がある？
@@ -88,6 +104,27 @@ impl GameMaster {
                 (self.field.get_width() / 2) as i64, // ControlledMinoの幅を考慮
                 self.ng.next(),
             ));
+        }
+
+        match key {
+            Keyboard::Rightrotate => self.cm.right_rotate(&mut self.field),
+            Keyboard::Leftrotate => self.cm.left_rotate(&mut self.field),
+            Keyboard::Softdrop => {
+                if elapsed_time_in_milli / self.params.softdrop_interval as i32
+                    != self.count_softdrop
+                {
+                    self.cm.move_mino(&self.field, field::Orientation::Downward);
+                    self.count_softdrop =
+                        elapsed_time_in_milli / self.params.softdrop_interval as i32;
+                }
+            }
+            Keyboard::Harddrop => {}
+            Keyboard::Rightmove => self
+                .cm
+                .move_mino(&self.field, field::Orientation::Rightward),
+            Keyboard::Leftmove => self.cm.move_mino(&self.field, field::Orientation::Leftward),
+            Keyboard::Hold => {}
+            Keyboard::Other => {}
         }
 
         // TODO: webassemblyを使うかでキーイベントも変化するかも
