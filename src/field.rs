@@ -9,8 +9,8 @@ use std::iter::FromIterator;
 pub struct FieldBlock {
     // TODO: filledも本来はprivateにしたほうがいい？
     // 自由にミノを配置したりを考えるとpubのほうが使いやすい？
-    pub filled: bool, // ブロックにミノが存在するか
-    color: [f32; 4],  // ブロックの色
+    pub filled: bool,    // ブロックにミノが存在するか
+    pub color: [f32; 4], // ブロックの色
 }
 
 // テトリスのフィールド
@@ -160,6 +160,10 @@ impl ControlledMino {
 
     pub fn get_grounded(&self) -> bool {
         self.grounded
+    }
+
+    pub fn get_mino(&self) -> &Box<dyn mino::Mino> {
+        &self.mino
     }
 
     // ミノの種類と向きからフィールド上での状態を生成する

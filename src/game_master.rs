@@ -87,14 +87,26 @@ impl GameMaster {
             let rendered_mino = self.cm.render();
             for i in 0..rendered_mino.len() {
                 for j in 0..rendered_mino[i].len() {
-                    if i as i64 + self.cm.get_y() >= 0
+                    if !(i as i64 + self.cm.get_y() >= 0
                         && i as i64 + self.cm.get_y() < self.field.get_height() as i64
                         && j as i64 + self.cm.get_x() >= 0
-                        && j as i64 + self.cm.get_x() < self.field.get_width() as i64
+                        && j as i64 + self.cm.get_x() < self.field.get_width() as i64)
                     {
+                        continue;
+                    }
+
+                    if rendered_mino[i][j] {
                         self.field
                             .get_block(i + self.cm.get_y() as usize, j + self.cm.get_x() as usize)
-                            .filled |= rendered_mino[i][j];
+                            .filled = true;
+                        for k in 0..4 {
+                            self.field
+                                .get_block(
+                                    i + self.cm.get_y() as usize,
+                                    j + self.cm.get_x() as usize,
+                                )
+                                .color[k] = self.cm.get_mino().get_color()[k];
+                        }
                     }
                 }
             }
@@ -143,13 +155,17 @@ impl GameMaster {
     }
 
     /// ControlledMinoをFieldに投影
-    pub fn project_controlled_mino(&mut self) -> Vec<Vec<bool>> {
+    pub fn project_controlled_mino(&mut self) -> (Vec<Vec<bool>>, Vec<Vec<[f32; 4]>>) {
         let width = self.field.get_width();
         let height = self.field.get_height();
-        let mut projected = vec![vec![false; width]; height];
+        let mut projected_filled = vec![vec![false; width]; height];
+        let mut projected_color = vec![vec![[1.0; 4]; width]; height];
         for i in 0..height {
             for j in 0..width {
-                projected[i][j] = self.field.get_block(i, j).filled;
+                projected_filled[i][j] = self.field.get_block(i, j).filled;
+                for k in 0..4 {
+                    projected_color[i][j][k] = self.field.get_block(i, j).color[k];
+                }
             }
         }
 
@@ -158,15 +174,23 @@ impl GameMaster {
         let rendered_mino = self.cm.render();
         for i in 0..rendered_mino.len() {
             for j in 0..rendered_mino[i].len() {
-                if i as i64 + y >= 0
+                if !(i as i64 + y >= 0
                     && i as i64 + y < height as i64
                     && j as i64 + x >= 0
-                    && j as i64 + x < width as i64
+                    && j as i64 + x < width as i64)
                 {
-                    projected[i + y as usize][j + x as usize] |= rendered_mino[i][j];
+                    continue;
+                }
+
+                if rendered_mino[i][j] {
+                    projected_filled[i + y as usize][j + x as usize] = true;
+                    for k in 0..4 {
+                        projected_color[i + y as usize][j + x as usize][k] =
+                            self.cm.get_mino().get_color()[k];
+                    }
                 }
             }
         }
-        projected
+        (projected_filled, projected_color)
     }
 }
