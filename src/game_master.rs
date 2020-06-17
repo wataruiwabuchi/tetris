@@ -58,10 +58,7 @@ impl GameMaster {
         rand_gen: Box<dyn FnMut() -> usize>,
         start_time_in_milli: i32,
     ) -> GameMaster {
-        let mut ng = next_generator::DefaultNextGenerator {
-            buffer: vec![],
-            rand_gen: rand_gen,
-        };
+        let mut ng = next_generator::DefaultNextGenerator::new(rand_gen);
         GameMaster {
             field: field::Field::new(height, width),
             cm: Box::new(field::ControlledMino::new((width / 2) as i64, ng.next())), // TODO: ContorolledMinoの幅を考慮する必要
@@ -72,6 +69,7 @@ impl GameMaster {
             params: TetrisParams::default(),
         }
     }
+
     pub fn tick(&mut self, current_time_in_milli: i32, key: Keyboard) {
         let elapsed_time_in_milli = current_time_in_milli - self.start_time_in_milli;
         // loop回数の場合はloop内の実行時間の影響を受ける

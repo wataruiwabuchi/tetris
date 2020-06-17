@@ -11,11 +11,18 @@ pub trait NextGenerator {
 pub struct DefaultNextGenerator {
     // TODO; traitのvecを作成する方法は二つある片方は簡潔だが遅い，もう片方は複雑だが速い
     // https://doc.rust-jp.rs/book/second-edition/ch17-02-trait-objects.html
-    pub buffer: Vec<Box<dyn mino::Mino>>,
-    pub rand_gen: Box<dyn FnMut() -> usize>,
+    buffer: Vec<Box<dyn mino::Mino>>,
+    rand_gen: Box<dyn FnMut() -> usize>,
 }
 
 impl DefaultNextGenerator {
+    pub fn new(rand_gen: Box<dyn FnMut() -> usize>) -> DefaultNextGenerator {
+        DefaultNextGenerator {
+            buffer: vec![],
+            rand_gen: rand_gen,
+        }
+    }
+
     ///  bufferの中身が0の場合に実行
     /// 7個1セットのミノを生成してnextのbufferに詰める
     fn generate(&mut self) {
