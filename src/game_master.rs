@@ -191,4 +191,8 @@ impl GameMaster {
         }
         (projected_filled, projected_color)
     }
+
+    pub fn get_next(&self, idx: usize) -> Option<&Box<dyn mino::Mino>> {
+        self.ng.get_next(idx)
+    }
 }

@@ -5,6 +5,7 @@ use rand::prelude::*;
 
 pub trait NextGenerator {
     fn next(&mut self) -> Box<dyn mino::Mino>;
+    fn get_next(&self, idx: usize) -> Option<&Box<dyn mino::Mino>>;
 }
 
 /// 7種類を１セットとして生成する
@@ -78,6 +79,14 @@ impl NextGenerator for DefaultNextGenerator {
             }
         }
     }
+
+    fn get_next(&self, idx: usize) -> Option<&Box<dyn mino::Mino>> {
+        if self.buffer.len() > idx {
+            Some(&self.buffer[idx])
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -96,6 +105,32 @@ mod defaultnextgenerator_tests {
         for _ in 0..10 {
             nx.generate();
         }
+    }
+
+    #[test]
+    fn test_get_next() {
+        let mut rng = thread_rng();
+        let rand_gen = Box::new(move || rng.gen::<usize>());
+        let mut nx = DefaultNextGenerator {
+            buffer: vec![],
+            rand_gen: rand_gen,
+        };
+
+        nx.generate();
+        let mut count_some = 0;
+        let mut count_none = 0;
+        for i in 0..10 {
+            match nx.get_next(i) {
+                Some(_) => {
+                    count_some += 1;
+                }
+                None => {
+                    count_none += 1;
+                }
+            }
+        }
+
+        assert!(!(count_some == 0 || count_none == 0));
     }
 
     // TODO: nextの生成が7個1セットでできているかもテストしたい
