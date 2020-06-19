@@ -71,18 +71,18 @@ impl NextGenerator for DefaultNextGenerator {
     // TODO:
     // 現在の実装ではbufferの中身が0になってから生成しているのでnextとして画面に表示できない．
     fn next(&mut self) -> Box<dyn mino::Mino> {
-        match self.buffer.pop() {
-            Some(top) => top,
-            None => {
-                self.generate();
-                self.buffer.pop().unwrap()
-            }
+        if self.buffer.len() < 10 {
+            self.generate();
         }
+        self.buffer.pop().unwrap()
     }
 
+    // TODO: idx = 0が次に取り出すminoとする
+    // 内部的にはVec(stack)で実装しているので少し変なことになっている
+    // queueで実装したほうが自然かも？
     fn get_next(&self, idx: usize) -> Option<&Box<dyn mino::Mino>> {
         if self.buffer.len() > idx {
-            Some(&self.buffer[idx])
+            Some(&self.buffer[self.buffer.len() - idx - 1])
         } else {
             None
         }
@@ -138,4 +138,37 @@ mod defaultnextgenerator_tests {
     // 現在思いついているあまり良くない方法(testのためだけに実装することになってしまう)
     // 1: 型判定用のfieldをstructに追加
     // 2: 同一性判定のためのtraitを実装
+    #[test]
+    fn test_next() {
+        use std::collections::HashMap;
+
+        let num_iter = 100;
+        let mut rng = thread_rng();
+        let rand_gen = Box::new(move || rng.gen::<usize>());
+        let mut ng = DefaultNextGenerator {
+            buffer: VecDeque::new(),
+            rand_gen: rand_gen,
+        };
+
+        // ミノは同じ数になるように生成しているのでそれをテスト
+        // 構造体の種類を直接判定する方法が見つからなかったのでshapeをbitにみたてて同一性を判定
+        let mut count_next_mino = HashMap::new();
+        for _ in 0..7 * num_iter {
+            let next_mino = ng.next();
+            let mut key = 0;
+            for i in 0..next_mino.get_size() {
+                for j in 0..next_mino.get_size() {
+                    if next_mino.get_shape()[i][j] {
+                        key += 1 << i * next_mino.get_size() + j;
+                    }
+                }
+            }
+            let count = count_next_mino.entry(key).or_insert(0);
+            *count += 1;
+        }
+
+        for v in count_next_mino.values() {
+            assert_eq!(*v, num_iter)
+        }
+    }
 }
