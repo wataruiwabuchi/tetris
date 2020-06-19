@@ -2,6 +2,7 @@
 // 一応インタフェース化はするつもりだが戦略などが変化することもないはずなので必要ないかも
 use crate::mino;
 use rand::prelude::*;
+use std::collections::VecDeque;
 
 pub trait NextGenerator {
     fn next(&mut self) -> Box<dyn mino::Mino>;
@@ -12,14 +13,14 @@ pub trait NextGenerator {
 pub struct DefaultNextGenerator {
     // TODO; traitのvecを作成する方法は二つある片方は簡潔だが遅い，もう片方は複雑だが速い
     // https://doc.rust-jp.rs/book/second-edition/ch17-02-trait-objects.html
-    buffer: Vec<Box<dyn mino::Mino>>,
+    buffer: VecDeque<Box<dyn mino::Mino>>,
     rand_gen: Box<dyn FnMut() -> usize>,
 }
 
 impl DefaultNextGenerator {
     pub fn new(rand_gen: Box<dyn FnMut() -> usize>) -> DefaultNextGenerator {
         DefaultNextGenerator {
-            buffer: vec![],
+            buffer: VecDeque::new(),
             rand_gen: rand_gen,
         }
     }
@@ -37,28 +38,30 @@ impl DefaultNextGenerator {
             indices[i2] = tmp;
         }
 
+        println!("{:?}", indices);
+
         for i in indices {
             match i {
                 0 => {
-                    self.buffer.push(Box::new(mino::TMino::default()));
+                    self.buffer.push_back(Box::new(mino::TMino::default()));
                 }
                 1 => {
-                    self.buffer.push(Box::new(mino::SMino::default()));
+                    self.buffer.push_back(Box::new(mino::SMino::default()));
                 }
                 2 => {
-                    self.buffer.push(Box::new(mino::ZMino::default()));
+                    self.buffer.push_back(Box::new(mino::ZMino::default()));
                 }
                 3 => {
-                    self.buffer.push(Box::new(mino::LMino::default()));
+                    self.buffer.push_back(Box::new(mino::LMino::default()));
                 }
                 4 => {
-                    self.buffer.push(Box::new(mino::JMino::default()));
+                    self.buffer.push_back(Box::new(mino::JMino::default()));
                 }
                 5 => {
-                    self.buffer.push(Box::new(mino::IMino::default()));
+                    self.buffer.push_back(Box::new(mino::IMino::default()));
                 }
                 6 => {
-                    self.buffer.push(Box::new(mino::OMino::default()));
+                    self.buffer.push_back(Box::new(mino::OMino::default()));
                 }
                 _ => {}
             }
@@ -71,10 +74,10 @@ impl NextGenerator for DefaultNextGenerator {
     // TODO:
     // 現在の実装ではbufferの中身が0になってから生成しているのでnextとして画面に表示できない．
     fn next(&mut self) -> Box<dyn mino::Mino> {
-        if self.buffer.len() < 10 {
+        if self.buffer.len() <= 7 {
             self.generate();
         }
-        self.buffer.pop().unwrap()
+        self.buffer.pop_front().unwrap()
     }
 
     // TODO: idx = 0が次に取り出すminoとする
@@ -82,7 +85,7 @@ impl NextGenerator for DefaultNextGenerator {
     // queueで実装したほうが自然かも？
     fn get_next(&self, idx: usize) -> Option<&Box<dyn mino::Mino>> {
         if self.buffer.len() > idx {
-            Some(&self.buffer[self.buffer.len() - idx - 1])
+            Some(&self.buffer[idx])
         } else {
             None
         }
@@ -98,7 +101,7 @@ mod defaultnextgenerator_tests {
         let mut rng = thread_rng();
         let rand_gen = Box::new(move || rng.gen::<usize>());
         let mut nx = DefaultNextGenerator {
-            buffer: vec![],
+            buffer: VecDeque::new(),
             rand_gen: rand_gen,
         };
 
@@ -112,7 +115,7 @@ mod defaultnextgenerator_tests {
         let mut rng = thread_rng();
         let rand_gen = Box::new(move || rng.gen::<usize>());
         let mut nx = DefaultNextGenerator {
-            buffer: vec![],
+            buffer: VecDeque::new(),
             rand_gen: rand_gen,
         };
 
