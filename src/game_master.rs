@@ -132,7 +132,11 @@ impl GameMaster {
                         elapsed_time_in_milli / self.params.softdrop_interval as i32;
                 }
             }
-            Keyboard::Harddrop => {}
+            Keyboard::Harddrop => {
+                for _ in 0..self.field.get_height() {
+                    self.cm.move_mino(&self.field, field::Orientation::Downward);
+                }
+            }
             Keyboard::Rightmove => self
                 .cm
                 .move_mino(&self.field, field::Orientation::Rightward),
@@ -175,36 +179,38 @@ impl GameMaster {
         let y = self.cm.get_y();
         let grounded = self.cm.get_grounded();
 
-        for _ in 0..height {
-            self.cm.move_mino(&self.field, field::Orientation::Downward);
-        }
+        if self.enable_ghost {
+            for _ in 0..height {
+                self.cm.move_mino(&self.field, field::Orientation::Downward);
+            }
 
-        // ghostを表示
-        let ghost_x = self.cm.get_x();
-        let ghost_y = self.cm.get_y();
-        let rendered_mino = self.cm.render();
-        for i in 0..rendered_mino.len() {
-            for j in 0..rendered_mino[i].len() {
-                if !(i as i64 + ghost_y >= 0
-                    && i as i64 + ghost_y < height as i64
-                    && j as i64 + ghost_x >= 0
-                    && j as i64 + ghost_x < width as i64)
-                {
-                    continue;
-                }
+            // ghostを表示
+            let ghost_x = self.cm.get_x();
+            let ghost_y = self.cm.get_y();
+            let rendered_mino = self.cm.render();
+            for i in 0..rendered_mino.len() {
+                for j in 0..rendered_mino[i].len() {
+                    if !(i as i64 + ghost_y >= 0
+                        && i as i64 + ghost_y < height as i64
+                        && j as i64 + ghost_x >= 0
+                        && j as i64 + ghost_x < width as i64)
+                    {
+                        continue;
+                    }
 
-                if rendered_mino[i][j] {
-                    projected_filled[i + ghost_y as usize][j + ghost_x as usize] = true;
-                    for k in 0..4 {
-                        projected_color[i + ghost_y as usize][j + ghost_x as usize][k] =
-                            self.ghost_color[k];
+                    if rendered_mino[i][j] {
+                        projected_filled[i + ghost_y as usize][j + ghost_x as usize] = true;
+                        for k in 0..4 {
+                            projected_color[i + ghost_y as usize][j + ghost_x as usize][k] =
+                                self.ghost_color[k];
+                        }
                     }
                 }
             }
-        }
 
-        self.cm.set_y(y);
-        self.cm.set_grounded(grounded);
+            self.cm.set_y(y);
+            self.cm.set_grounded(grounded);
+        }
 
         // 操作中のミノを表示
         // TODO: ほぼ同じコードが連続しているので削除したい
