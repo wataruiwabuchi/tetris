@@ -38,8 +38,6 @@ impl DefaultNextGenerator {
             indices[i2] = tmp;
         }
 
-        println!("{:?}", indices);
-
         for i in indices {
             match i {
                 0 => {

@@ -158,8 +158,16 @@ impl ControlledMino {
         self.y
     }
 
+    pub fn set_y(&mut self, y: i64) {
+        self.y = y;
+    }
+
     pub fn get_grounded(&self) -> bool {
         self.grounded
+    }
+
+    pub fn set_grounded(&mut self, grounded: bool) {
+        self.grounded = grounded;
     }
 
     pub fn get_mino(&self) -> &Box<dyn mino::Mino> {
