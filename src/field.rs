@@ -170,8 +170,8 @@ impl ControlledMino {
         self.grounded = grounded;
     }
 
-    pub fn get_mino(&self) -> &Box<dyn mino::Mino> {
-        &self.mino
+    pub fn get_mino(&mut self) -> &mut Box<dyn mino::Mino> {
+        &mut self.mino
     }
 
     // ミノの種類と向きからフィールド上での状態を生成する

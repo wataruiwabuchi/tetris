@@ -4,6 +4,11 @@ use crate::next_generator;
 use crate::next_generator::NextGenerator;
 use std::time::Instant;
 
+pub enum Hold {
+    Holding(Box<dyn mino::Mino>),
+    None,
+}
+
 #[derive(Copy, Clone)]
 pub enum Keyboard {
     Rightrotate,
@@ -42,7 +47,8 @@ pub struct GameMaster {
     //params : Parameter, // 各種パラメータ
     ng: Box<dyn next_generator::NextGenerator>, // ネクスト生成器
     // TODO: holdの実装
-    //hold : HoldMino, // ホールド
+    hold: Hold,   // ホールド
+    holded: bool, // 連続でホールドを行うことを禁止
     //controller: Controller, // ユーザインタフェース（コントローラー）
     //renderer : Renderer, // 無限ループするなら画面描写もこちらに持たせておいたほうがいい？（インタフェース化はしておく）
     start_time_in_milli: i32,
@@ -65,6 +71,8 @@ impl GameMaster {
             field: field::Field::new(height, width),
             cm: Box::new(field::ControlledMino::new((width / 2) as i64, ng.next())), // TODO: ContorolledMinoの幅を考慮する必要
             ng: Box::new(ng),
+            hold: Hold::None,
+            holded: false,
             start_time_in_milli: start_time_in_milli,
             count_drop: 0,
             count_softdrop: 0,
@@ -118,6 +126,8 @@ impl GameMaster {
                 (self.field.get_width() / 2) as i64, // ControlledMinoの幅を考慮
                 self.ng.next(),
             ));
+
+            self.holded = false;
         }
 
         match key {
@@ -141,7 +151,28 @@ impl GameMaster {
                 .cm
                 .move_mino(&self.field, field::Orientation::Rightward),
             Keyboard::Leftmove => self.cm.move_mino(&self.field, field::Orientation::Leftward),
-            Keyboard::Hold => {}
+            Keyboard::Hold => {
+                if self.holded == false {
+                    // 参考
+                    // https://frozenlib.net/blog/2018-03-11_rust-pattern-match/
+                    match self.hold {
+                        Hold::Holding(ref mut m) => {
+                            std::mem::swap(m, self.cm.get_mino());
+                        }
+                        Hold::None => {
+                            // https://qiita.com/quasardtm/items/b54a48c1accd675e0bf1
+                            let mut m: Box<dyn mino::Mino> = Box::new(mino::TMino::default());
+                            std::mem::swap(&mut m, self.cm.get_mino());
+                            self.hold = Hold::Holding(m);
+                            self.cm = Box::new(field::ControlledMino::new(
+                                (self.field.get_width() / 2) as i64, // 初期位置を調整
+                                self.ng.next(),
+                            ));
+                        }
+                    };
+                    self.holded = true;
+                }
+            }
             Keyboard::Other => {}
         }
 
@@ -240,5 +271,9 @@ impl GameMaster {
 
     pub fn get_next(&self, idx: usize) -> Option<&Box<dyn mino::Mino>> {
         self.ng.get_next(idx)
+    }
+
+    pub fn get_hold(&self) -> &Hold {
+        &self.hold
     }
 }
