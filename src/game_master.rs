@@ -1,4 +1,5 @@
 use crate::field;
+use crate::garbage_block_generator;
 use crate::mino;
 use crate::next_generator;
 use crate::next_generator::NextGenerator;
@@ -24,6 +25,7 @@ pub enum Keyboard {
 pub struct TetrisParams {
     drop_interval: u64,     // millisecondを想定
     softdrop_interval: u64, // millisecondを想定
+    garbage_interval: u64,  // millisecondを想定
 }
 
 impl Default for TetrisParams {
@@ -31,6 +33,7 @@ impl Default for TetrisParams {
         TetrisParams {
             drop_interval: 1500,
             softdrop_interval: 50,
+            garbage_interval: 10000,
         }
     }
 }
@@ -38,24 +41,20 @@ impl Default for TetrisParams {
 // ゲーム進行や各要素を管理
 // 各インタフェースだけでも先に決めておかないとこっちがつらいかも？
 pub struct GameMaster {
-    pub field: field::Field, // テトリスのフィールド
-    //cm: field::ControlledMino<dyn mino::Mino>, // 操作しているミノ
+    pub field: field::Field,            // テトリスのフィールド
     pub cm: Box<field::ControlledMino>, // 操作しているミノ
-    //timer: Timer, // クロック生成器
-    // TODO: gbgの実装
-    //gbg : GarbageBlockGenerator, // おじゃまブロックの出現を管理
-    //params : Parameter, // 各種パラメータ
+    gbg: Box<dyn garbage_block_generator::GarbageBlockGenerator>, // おじゃまブロック
     ng: Box<dyn next_generator::NextGenerator>, // ネクスト生成器
-    // TODO: holdの実装
-    hold: Hold,   // ホールド
-    holded: bool, // 連続でホールドを行うことを禁止
-    //controller: Controller, // ユーザインタフェース（コントローラー）
-    //renderer : Renderer, // 無限ループするなら画面描写もこちらに持たせておいたほうがいい？（インタフェース化はしておく）
+    hold: Hold,                         // ホールド
+    holded: bool,                       // 連続でホールドを行うことを禁止
     start_time_in_milli: i32,
     count_drop: i32,
     count_softdrop: i32,
+    count_garbage: i32,
     enable_ghost: bool,
+    enable_garbage: bool,
     ghost_color: [f32; 4],
+    game_over: bool,
     params: TetrisParams,
 }
 
@@ -63,21 +62,32 @@ impl GameMaster {
     pub fn new(
         height: usize,
         width: usize,
-        rand_gen: Box<dyn FnMut() -> usize>,
+        rand_gen_ng: Box<dyn FnMut() -> usize>,
+        rand_gen_gbg: Box<dyn FnMut() -> usize>,
         start_time_in_milli: i32,
+        enable_ghost: bool,
+        enable_garbage: bool,
     ) -> GameMaster {
-        let mut ng = next_generator::DefaultNextGenerator::new(rand_gen);
+        // TODO: 二つrand_genを受け取る必要はないはず
+        // 共有する方法を考える
+        // 乱数が必要な場合に引数として渡すのも一つ
+        let mut ng = next_generator::DefaultNextGenerator::new(rand_gen_ng);
+        let gbg = garbage_block_generator::HoritetoGarbageBlockGenerator::new(rand_gen_gbg);
         GameMaster {
             field: field::Field::new(height, width),
             cm: Box::new(field::ControlledMino::new((width / 2) as i64, ng.next())), // TODO: ContorolledMinoの幅を考慮する必要
+            gbg: Box::new(gbg),
             ng: Box::new(ng),
             hold: Hold::None,
             holded: false,
             start_time_in_milli: start_time_in_milli,
             count_drop: 0,
             count_softdrop: 0,
-            enable_ghost: true,
+            count_garbage: 0,
+            enable_ghost: enable_ghost,
+            enable_garbage: enable_garbage,
             ghost_color: [0.5; 4],
+            game_over: false,
             params: TetrisParams::default(),
         }
     }
@@ -90,6 +100,50 @@ impl GameMaster {
         if elapsed_time_in_milli / self.params.drop_interval as i32 != self.count_drop {
             self.cm.move_mino(&self.field, field::Orientation::Downward);
             self.count_drop = elapsed_time_in_milli / self.params.drop_interval as i32;
+        }
+
+        // おじゃまブロックの生成
+        if self.enable_garbage {
+            if elapsed_time_in_milli / self.params.garbage_interval as i32 != self.count_garbage {
+                let garbage_lines = self.gbg.generate(self.field.get_width(), 1, [0.0; 4]);
+                match self.field.insert_lines(garbage_lines) {
+                    Ok(_) => {
+                        // TODO: おじゃまブロックを生成したときの接地処理が自信がない
+                        for _ in 0..self.cm.get_y() {
+                            let rendered_mino = self.cm.render();
+                            let mut block_overlapping = false;
+                            for i in 0..rendered_mino.len() {
+                                for j in 0..rendered_mino[i].len() {
+                                    let block_filled = self
+                                        .field
+                                        .get_block(
+                                            i + self.cm.get_y() as usize,
+                                            j + self.cm.get_x() as usize,
+                                        )
+                                        .filled;
+                                    if rendered_mino[i][j] && block_filled {
+                                        block_overlapping = true;
+                                        self.cm.set_grounded(true);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if !block_overlapping {
+                                break;
+                            }
+
+                            self.cm.move_mino(&self.field, field::Orientation::Upward);
+                        }
+                    }
+                    Err(err) => {
+                        println!("{}", err);
+                        self.game_over = true;
+                    }
+                }
+
+                self.count_garbage = elapsed_time_in_milli / self.params.garbage_interval as i32;
+            }
         }
 
         if self.cm.get_grounded() {

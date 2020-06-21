@@ -1,6 +1,7 @@
 use crate::mino;
 use std::cmp::Reverse;
 use std::collections::HashSet;
+use std::collections::VecDeque;
 use std::iter::FromIterator;
 /// 21×10のテトリスのフィールドを表現
 /// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
@@ -17,13 +18,13 @@ pub struct FieldBlock {
 pub struct Field {
     height: usize,
     width: usize,
-    blocks: Vec<Vec<FieldBlock>>,
+    blocks: VecDeque<Vec<FieldBlock>>,
 }
 
 impl Field {
     /// Fieldのコンストラクタ
     pub fn new(height: usize, width: usize) -> Field {
-        let mut blocks: Vec<Vec<FieldBlock>> = Vec::new();
+        let mut blocks: VecDeque<Vec<FieldBlock>> = VecDeque::new();
         for _ in 0..height {
             let mut tmp_vec: Vec<FieldBlock> = Vec::new();
             for _ in 0..width {
@@ -32,7 +33,7 @@ impl Field {
                     color: [0 as f32; 4],
                 });
             }
-            blocks.push(tmp_vec);
+            blocks.push_back(tmp_vec);
         }
         Field {
             height: height,
@@ -121,6 +122,31 @@ impl Field {
                 }
             }
         }
+    }
+
+    /// fieldにlineを挿入する関数
+    /// 主におじゃまブロックの生成時に使用することを想定している
+    /// 挿入後にフィールドの上部にはみ出すブロックが存在する場合はErrを返す
+    pub fn insert_lines(
+        &mut self,
+        inserted_lines: Vec<Vec<FieldBlock>>,
+    ) -> Result<&'static str, &'static str> {
+        for i in 0..inserted_lines.len() {
+            if self.blocks[i]
+                .iter()
+                .fold(0, |acc, x| acc + x.filled as usize)
+                > 0
+            {
+                return Err("挿入不可能");
+            }
+        }
+
+        for inserted_line in inserted_lines {
+            self.blocks.pop_front();
+            self.blocks.push_back(inserted_line);
+        }
+
+        return Ok("Success");
     }
 }
 
@@ -368,13 +394,12 @@ impl ControlledMino {
         let mut moved_y = self.get_y() as i64;
 
         match ori {
-            Orientation::Upward => return,
+            Orientation::Upward => moved_y += 1,
             Orientation::Rightward => moved_x += 1,
             Orientation::Downward => moved_y += 1,
             Orientation::Leftward => moved_x -= 1,
         }
 
-        // ミノを一つ下に移動させることが可能か判定
         let mut movable = true;
         for i in 0..size {
             for j in 0..size {
