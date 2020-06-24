@@ -10,16 +10,14 @@ pub enum Hold {
     None,
 }
 
-#[derive(Copy, Clone)]
-pub enum Keyboard {
-    Rightrotate,
-    Leftrotate,
-    Softdrop,
-    Harddrop,
-    Rightmove,
-    Leftmove,
-    Hold,
-    Other,
+pub struct KeyPress {
+    pub right_rotate: bool,
+    pub left_rotate: bool,
+    pub hold: bool,
+    pub soft_drop: bool,
+    pub hard_drop: bool,
+    pub right_move: bool,
+    pub left_move: bool,
 }
 
 pub struct TetrisParams {
@@ -92,7 +90,7 @@ impl GameMaster {
         }
     }
 
-    pub fn tick(&mut self, current_time_in_milli: i32, key: Keyboard) {
+    pub fn tick(&mut self, current_time_in_milli: i32, key: KeyPress) {
         let elapsed_time_in_milli = current_time_in_milli - self.start_time_in_milli;
         // loop回数の場合はloop内の実行時間の影響を受ける
         // 時間の場合は何回処理を行ったかを記録しておく必要がある？
@@ -184,71 +182,59 @@ impl GameMaster {
             self.holded = false;
         }
 
-        match key {
-            Keyboard::Rightrotate => self.cm.right_rotate(&mut self.field),
-            Keyboard::Leftrotate => self.cm.left_rotate(&mut self.field),
-            Keyboard::Softdrop => {
-                if elapsed_time_in_milli / self.params.move_interval as i32 != self.count_move {
-                    self.cm.move_mino(&self.field, field::Orientation::Downward);
-                    self.count_move = elapsed_time_in_milli / self.params.move_interval as i32;
-                }
-            }
-            Keyboard::Harddrop => {
-                for _ in 0..self.field.get_height() {
-                    self.cm.move_mino(&self.field, field::Orientation::Downward);
-                }
-            }
-            Keyboard::Rightmove => {
-                if elapsed_time_in_milli / self.params.move_interval as i32 != self.count_move {
-                    self.cm
-                        .move_mino(&self.field, field::Orientation::Rightward);
-                    self.count_move = elapsed_time_in_milli / self.params.move_interval as i32;
-                }
-            }
-            Keyboard::Leftmove => {
-                if elapsed_time_in_milli / self.params.move_interval as i32 != self.count_move {
-                    self.cm.move_mino(&self.field, field::Orientation::Leftward);
-                    self.count_move = elapsed_time_in_milli / self.params.move_interval as i32;
-                }
-            }
-            Keyboard::Hold => {
-                if self.holded == false {
-                    // 参考
-                    // https://frozenlib.net/blog/2018-03-11_rust-pattern-match/
-                    match self.hold {
-                        Hold::Holding(ref mut m) => {
-                            std::mem::swap(m, self.cm.get_mino());
-                        }
-                        Hold::None => {
-                            // https://qiita.com/quasardtm/items/b54a48c1accd675e0bf1
-                            let mut m: Box<dyn mino::Mino> = Box::new(mino::TMino::default());
-                            std::mem::swap(&mut m, self.cm.get_mino());
-                            self.hold = Hold::Holding(m);
-                            self.cm = Box::new(field::ControlledMino::new(
-                                (self.field.get_width() / 2) as i64, // 初期位置を調整
-                                self.ng.next(),
-                            ));
-                        }
-                    };
-                    self.holded = true;
-                }
-            }
-            Keyboard::Other => {}
+        if key.right_rotate {
+            self.cm.right_rotate(&mut self.field);
         }
 
-        // TODO: webassemblyを使うかでキーイベントも変化するかも
-        // 自分が実現したい抽象化を考えるとその部分は分離しておきたい
-        // 抽象化されているとしてどのような実装か
-        // コントローラーにイベントとメソッドを登録
-        // またはコントローラーの状態に押下されたキーを持たせておく
-        // userの操作イベントを取得して移動やホールド処理
-        // 接地してから位置を確定させる処理はこっちで実装？
-        // clkに関係するのでこっちのほうがよさそう
-        // fieldやcontrolledminoに位置確定という命令を投げる？
+        if key.left_rotate {
+            self.cm.left_rotate(&mut self.field);
+        }
 
-        // generate garbage
+        if key.hard_drop {
+            for _ in 0..self.field.get_height() {
+                self.cm.move_mino(&self.field, field::Orientation::Downward);
+            }
+        }
 
-        // 画面描写
+        if elapsed_time_in_milli / self.params.move_interval as i32 != self.count_move {
+            if key.soft_drop {
+                self.cm.move_mino(&self.field, field::Orientation::Downward);
+            }
+
+            if key.right_move {
+                self.cm
+                    .move_mino(&self.field, field::Orientation::Rightward);
+            }
+
+            if key.left_move {
+                self.cm.move_mino(&self.field, field::Orientation::Leftward);
+            }
+
+            self.count_move = elapsed_time_in_milli / self.params.move_interval as i32;
+        }
+
+        if key.hold {
+            if self.holded == false {
+                // 参考
+                // https://frozenlib.net/blog/2018-03-11_rust-pattern-match/
+                match self.hold {
+                    Hold::Holding(ref mut m) => {
+                        std::mem::swap(m, self.cm.get_mino());
+                    }
+                    Hold::None => {
+                        // https://qiita.com/quasardtm/items/b54a48c1accd675e0bf1
+                        let mut m: Box<dyn mino::Mino> = Box::new(mino::TMino::default());
+                        std::mem::swap(&mut m, self.cm.get_mino());
+                        self.hold = Hold::Holding(m);
+                        self.cm = Box::new(field::ControlledMino::new(
+                            (self.field.get_width() / 2) as i64, // 初期位置を調整
+                            self.ng.next(),
+                        ));
+                    }
+                };
+                self.holded = true;
+            }
+        }
     }
 
     /// ControlledMinoをFieldに投影
