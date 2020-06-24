@@ -49,6 +49,9 @@ pub struct GameMaster {
     count_drop: i32,
     count_move: i32,
     count_garbage: i32,
+    right_rotated: bool, // 押しっぱなしを検知して処理を一回に限定
+    left_rotated: bool,
+    hard_dropped: bool,
     enable_ghost: bool,
     enable_garbage: bool,
     ghost_color: [f32; 4],
@@ -82,6 +85,9 @@ impl GameMaster {
             count_drop: 0,
             count_move: 0,
             count_garbage: 0,
+            right_rotated: false,
+            left_rotated: false,
+            hard_dropped: false,
             enable_ghost: enable_ghost,
             enable_garbage: enable_garbage,
             ghost_color: [0.5; 4],
@@ -182,15 +188,15 @@ impl GameMaster {
             self.holded = false;
         }
 
-        if key.right_rotate {
+        if !self.right_rotated && key.right_rotate {
             self.cm.right_rotate(&mut self.field);
         }
 
-        if key.left_rotate {
+        if !self.left_rotated && key.left_rotate {
             self.cm.left_rotate(&mut self.field);
         }
 
-        if key.hard_drop {
+        if !self.hard_dropped && key.hard_drop {
             for _ in 0..self.field.get_height() {
                 self.cm.move_mino(&self.field, field::Orientation::Downward);
             }
@@ -235,6 +241,10 @@ impl GameMaster {
                 self.holded = true;
             }
         }
+
+        self.right_rotated = key.right_rotate;
+        self.left_rotated = key.left_rotate;
+        self.hard_dropped = key.hard_drop;
     }
 
     /// ControlledMinoをFieldに投影
