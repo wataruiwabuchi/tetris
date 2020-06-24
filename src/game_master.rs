@@ -23,16 +23,16 @@ pub enum Keyboard {
 }
 
 pub struct TetrisParams {
-    drop_interval: u64,     // millisecondを想定
-    softdrop_interval: u64, // millisecondを想定
-    garbage_interval: u64,  // millisecondを想定
+    drop_interval: u64,    // millisecondを想定
+    move_interval: u64,    // millisecondを想定
+    garbage_interval: u64, // millisecondを想定
 }
 
 impl Default for TetrisParams {
     fn default() -> Self {
         TetrisParams {
             drop_interval: 1500,
-            softdrop_interval: 50,
+            move_interval: 50,
             garbage_interval: 10000,
         }
     }
@@ -49,7 +49,7 @@ pub struct GameMaster {
     holded: bool,                       // 連続でホールドを行うことを禁止
     start_time_in_milli: i32,
     count_drop: i32,
-    count_softdrop: i32,
+    count_move: i32,
     count_garbage: i32,
     enable_ghost: bool,
     enable_garbage: bool,
@@ -82,7 +82,7 @@ impl GameMaster {
             holded: false,
             start_time_in_milli: start_time_in_milli,
             count_drop: 0,
-            count_softdrop: 0,
+            count_move: 0,
             count_garbage: 0,
             enable_ghost: enable_ghost,
             enable_garbage: enable_garbage,
@@ -188,12 +188,9 @@ impl GameMaster {
             Keyboard::Rightrotate => self.cm.right_rotate(&mut self.field),
             Keyboard::Leftrotate => self.cm.left_rotate(&mut self.field),
             Keyboard::Softdrop => {
-                if elapsed_time_in_milli / self.params.softdrop_interval as i32
-                    != self.count_softdrop
-                {
+                if elapsed_time_in_milli / self.params.move_interval as i32 != self.count_move {
                     self.cm.move_mino(&self.field, field::Orientation::Downward);
-                    self.count_softdrop =
-                        elapsed_time_in_milli / self.params.softdrop_interval as i32;
+                    self.count_move = elapsed_time_in_milli / self.params.move_interval as i32;
                 }
             }
             Keyboard::Harddrop => {
@@ -201,10 +198,19 @@ impl GameMaster {
                     self.cm.move_mino(&self.field, field::Orientation::Downward);
                 }
             }
-            Keyboard::Rightmove => self
-                .cm
-                .move_mino(&self.field, field::Orientation::Rightward),
-            Keyboard::Leftmove => self.cm.move_mino(&self.field, field::Orientation::Leftward),
+            Keyboard::Rightmove => {
+                if elapsed_time_in_milli / self.params.move_interval as i32 != self.count_move {
+                    self.cm
+                        .move_mino(&self.field, field::Orientation::Rightward);
+                    self.count_move = elapsed_time_in_milli / self.params.move_interval as i32;
+                }
+            }
+            Keyboard::Leftmove => {
+                if elapsed_time_in_milli / self.params.move_interval as i32 != self.count_move {
+                    self.cm.move_mino(&self.field, field::Orientation::Leftward);
+                    self.count_move = elapsed_time_in_milli / self.params.move_interval as i32;
+                }
+            }
             Keyboard::Hold => {
                 if self.holded == false {
                     // 参考
