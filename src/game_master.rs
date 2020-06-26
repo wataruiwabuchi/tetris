@@ -10,6 +10,7 @@ pub enum Hold {
     None,
 }
 
+#[derive(Copy, Clone)]
 pub struct KeyPress {
     pub right_rotate: bool,
     pub left_rotate: bool,
@@ -20,17 +21,33 @@ pub struct KeyPress {
     pub left_move: bool,
 }
 
+impl Default for KeyPress {
+    fn default() -> Self {
+        KeyPress {
+            right_rotate: false,
+            left_rotate: false,
+            hold: false,
+            soft_drop: false,
+            hard_drop: false,
+            right_move: false,
+            left_move: false,
+        }
+    }
+}
+
 pub struct TetrisParams {
-    drop_interval: u64,    // millisecondを想定
-    move_interval: u64,    // millisecondを想定
-    garbage_interval: u64, // millisecondを想定
+    drop_interval: u64,        // millisecondを想定
+    first_move_interval: u64,  // millisecondを想定
+    second_move_interval: u64, // millisecondを想定
+    garbage_interval: u64,     // millisecondを想定
 }
 
 impl Default for TetrisParams {
     fn default() -> Self {
         TetrisParams {
             drop_interval: 1500,
-            move_interval: 50,
+            first_move_interval: 200,
+            second_move_interval: 30,
             garbage_interval: 10000,
         }
     }
@@ -47,11 +64,13 @@ pub struct GameMaster {
     holded: bool,                       // 連続でホールドを行うことを禁止
     start_time_in_milli: i32,
     count_drop: i32,
-    count_move: i32,
+    previously_move_time_in_milli: i32,
+    move_interval: u64,
     count_garbage: i32,
     right_rotated: bool, // 押しっぱなしを検知して処理を一回に限定
     left_rotated: bool,
     hard_dropped: bool,
+    previously_key_press: KeyPress,
     enable_ghost: bool,
     enable_garbage: bool,
     ghost_color: [f32; 4],
@@ -74,6 +93,7 @@ impl GameMaster {
         // 乱数が必要な場合に引数として渡すのも一つ
         let mut ng = next_generator::DefaultNextGenerator::new(rand_gen_ng);
         let gbg = garbage_block_generator::HoritetoGarbageBlockGenerator::new(rand_gen_gbg);
+        let params = TetrisParams::default();
         GameMaster {
             field: field::Field::new(height, width),
             cm: Box::new(field::ControlledMino::new((width / 2) as i64, ng.next())), // TODO: ContorolledMinoの幅を考慮する必要
@@ -83,16 +103,18 @@ impl GameMaster {
             holded: false,
             start_time_in_milli: start_time_in_milli,
             count_drop: 0,
-            count_move: 0,
+            previously_move_time_in_milli: 0,
+            move_interval: params.second_move_interval,
             count_garbage: 0,
             right_rotated: false,
             left_rotated: false,
             hard_dropped: false,
+            previously_key_press: KeyPress::default(),
             enable_ghost: enable_ghost,
             enable_garbage: enable_garbage,
             ghost_color: [0.5; 4],
             game_over: false,
-            params: TetrisParams::default(),
+            params: params,
         }
     }
 
@@ -202,21 +224,40 @@ impl GameMaster {
             }
         }
 
-        if elapsed_time_in_milli / self.params.move_interval as i32 != self.count_move {
-            if key.soft_drop {
-                self.cm.move_mino(&self.field, field::Orientation::Downward);
+        // TODO: 初回の移動のインターバルを大きくする処理の実装が複雑になった
+        /// ソフトドロップ，左右移動の処理
+        /// 連打した場合:キーを押した回数移動
+        /// 押しっぱなし:初回のみ移動の時間間隔を大きく
+        let elapsed_move_time_in_milli =
+            elapsed_time_in_milli - self.previously_move_time_in_milli as i32;
+        for (k, previously_k, ori) in [
+            (
+                key.soft_drop,
+                self.previously_key_press.soft_drop,
+                field::Orientation::Downward,
+            ),
+            (
+                key.left_move,
+                self.previously_key_press.left_move,
+                field::Orientation::Leftward,
+            ),
+            (
+                key.right_move,
+                self.previously_key_press.right_move,
+                field::Orientation::Rightward,
+            ),
+        ]
+        .iter()
+        {
+            if *k && (!previously_k || elapsed_move_time_in_milli >= self.move_interval as i32) {
+                self.cm.move_mino(&self.field, *ori);
+                if elapsed_move_time_in_milli >= 2 * self.move_interval as i32 || !previously_k {
+                    self.move_interval = self.params.first_move_interval;
+                } else {
+                    self.move_interval = self.params.second_move_interval;
+                }
+                self.previously_move_time_in_milli = elapsed_time_in_milli;
             }
-
-            if key.right_move {
-                self.cm
-                    .move_mino(&self.field, field::Orientation::Rightward);
-            }
-
-            if key.left_move {
-                self.cm.move_mino(&self.field, field::Orientation::Leftward);
-            }
-
-            self.count_move = elapsed_time_in_milli / self.params.move_interval as i32;
         }
 
         if key.hold {
@@ -245,6 +286,7 @@ impl GameMaster {
         self.right_rotated = key.right_rotate;
         self.left_rotated = key.left_rotate;
         self.hard_dropped = key.hard_drop;
+        self.previously_key_press = key.clone();
     }
 
     /// ControlledMinoをFieldに投影
@@ -332,4 +374,15 @@ impl GameMaster {
     pub fn get_hold(&self) -> &Hold {
         &self.hold
     }
+}
+
+#[cfg(test)]
+mod gamemaster_tests {
+    use super::*;
+
+    #[test]
+    fn test_project_controlled_mino() {}
+
+    // TODO: 左右移動，ソフトドロップの処理を切り出してテスト
+    // 操作感をテストするのは無理な気がする
 }
