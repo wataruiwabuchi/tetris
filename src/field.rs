@@ -54,6 +54,9 @@ impl Field {
     // 現状だと参照しかするつもりのない関数から呼ぶ場合もmutにしなければならない
     // set関数を実装しgetからmutをなくせば，getしか呼び出さない関数にはmutをつけない状態で渡しておくことができる
     // こちらのほうが適切なアクセス管理ができていると考えられる
+    // TODO: 返り値をoptionに変更
+    // index out of
+    // memoryを防ぐための境界判定の処理を一か所にまとめていたほうが実装忘れによるエラーを防止できる気がする
     pub fn get_block(&mut self, row: usize, col: usize) -> &mut FieldBlock {
         &mut self.blocks[row][col]
     }
