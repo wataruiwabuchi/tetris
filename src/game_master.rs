@@ -75,6 +75,7 @@ pub struct GameMaster {
     enable_garbage: bool,
     ghost_color: [f32; 4],
     game_over: bool,
+    num_deleted_lines: usize,
     params: TetrisParams,
 }
 
@@ -114,6 +115,7 @@ impl GameMaster {
             enable_garbage: enable_garbage,
             ghost_color: [0.5; 4],
             game_over: false,
+            num_deleted_lines: 0,
             params: params,
         }
     }
@@ -215,6 +217,15 @@ impl GameMaster {
                 (self.field.get_width() / 2) as i64, // ControlledMinoの幅を考慮
                 self.ng.next(),
             ));
+
+            // 一列揃っている場合の削除処理
+            match self.field.is_filled_each_row() {
+                Some(deleted_ids) => {
+                    self.num_deleted_lines += deleted_ids.len();
+                    self.field.delete_lines(deleted_ids);
+                }
+                None => {}
+            }
 
             self.holded = false;
         }
@@ -382,6 +393,10 @@ impl GameMaster {
 
     pub fn get_hold(&self) -> &Hold {
         &self.hold
+    }
+
+    pub fn get_num_deleted_lines(&self) -> usize {
+        self.num_deleted_lines
     }
 }
 
