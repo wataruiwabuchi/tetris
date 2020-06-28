@@ -135,17 +135,26 @@ impl GameMaster {
                 match self.field.insert_lines(garbage_lines) {
                     Ok(_) => {
                         // TODO: おじゃまブロックを生成したときの接地処理が自信がない
+                        let field_height = self.field.get_height() as i64;
+                        let field_width = self.field.get_width() as i64;
                         for _ in 0..self.cm.get_y() {
                             let rendered_mino = self.cm.render();
                             let mut block_overlapping = false;
                             for i in 0..rendered_mino.len() {
                                 for j in 0..rendered_mino[i].len() {
+                                    let row_idx = self.cm.get_y() + (i as i64);
+                                    let col_idx = self.cm.get_x() + (j as i64);
+                                    if row_idx < 0
+                                        || row_idx >= field_height
+                                        || col_idx < 0
+                                        || col_idx >= field_width
+                                    {
+                                        continue;
+                                    }
+
                                     let block_filled = self
                                         .field
-                                        .get_block(
-                                            i + self.cm.get_y() as usize,
-                                            j + self.cm.get_x() as usize,
-                                        )
+                                        .get_block(row_idx as usize, col_idx as usize)
                                         .filled;
                                     if rendered_mino[i][j] && block_filled {
                                         block_overlapping = true;
