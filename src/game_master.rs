@@ -40,6 +40,7 @@ pub struct TetrisParams {
     first_move_interval: u64,  // millisecondを想定
     second_move_interval: u64, // millisecondを想定
     garbage_interval: u64,     // millisecondを想定
+    grounded_interval: u64,    // millisecondを想定
 }
 
 impl Default for TetrisParams {
@@ -49,6 +50,7 @@ impl Default for TetrisParams {
             first_move_interval: 200,
             second_move_interval: 30,
             garbage_interval: 10000,
+            grounded_interval: 3000,
         }
     }
 }
@@ -65,6 +67,7 @@ pub struct GameMaster {
     start_time_in_milli: i32,
     count_drop: i32,
     previously_move_time_in_milli: i32,
+    grounded_time_in_milli: i32, // ミノが接地した時間
     move_interval: u64,
     count_garbage: i32,
     right_rotated: bool, // 押しっぱなしを検知して処理を一回に限定
@@ -105,6 +108,7 @@ impl GameMaster {
             start_time_in_milli: start_time_in_milli,
             count_drop: 0,
             previously_move_time_in_milli: 0,
+            grounded_time_in_milli: 0,
             move_interval: params.second_move_interval,
             count_garbage: 0,
             right_rotated: false,
@@ -122,9 +126,12 @@ impl GameMaster {
 
     pub fn tick(&mut self, current_time_in_milli: i32, key: KeyPress) {
         let elapsed_time_in_milli = current_time_in_milli - self.start_time_in_milli;
-        // loop回数の場合はloop内の実行時間の影響を受ける
-        // 時間の場合は何回処理を行ったかを記録しておく必要がある？
-        // 落下
+        // TODO: 時間経過によるイベントの処理方法を考える
+        // startから現在までの経過時間をintervalで除算したcountの値を保持する場合
+        // 細かい時間間隔の制御はできない
+        // 前回のイベントの発生からの経過時間を記録しておく場合
+        // 時間がリセットされる条件をちゃんと把握しておく必要がある
+        // タイマーの正確さによっては負の値が発生する可能性がある
         if elapsed_time_in_milli / self.params.drop_interval as i32 != self.count_drop {
             self.cm.move_mino(&self.field, field::Orientation::Downward);
             self.count_drop = elapsed_time_in_milli / self.params.drop_interval as i32;
@@ -183,51 +190,61 @@ impl GameMaster {
             }
         }
 
-        if self.cm.get_grounded() {
-            // ControlledMinoの位置を確定
-            let rendered_mino = self.cm.render();
-            for i in 0..rendered_mino.len() {
-                for j in 0..rendered_mino[i].len() {
-                    if !(i as i64 + self.cm.get_y() >= 0
-                        && i as i64 + self.cm.get_y() < self.field.get_height() as i64
-                        && j as i64 + self.cm.get_x() >= 0
-                        && j as i64 + self.cm.get_x() < self.field.get_width() as i64)
-                    {
-                        continue;
-                    }
+        if !self.cm.get_grounded() {
+            self.grounded_time_in_milli = current_time_in_milli;
+        } else {
+            if current_time_in_milli - self.grounded_time_in_milli
+                > self.params.grounded_interval as i32
+            {
+                // ControlledMinoの位置を確定
+                let rendered_mino = self.cm.render();
+                for i in 0..rendered_mino.len() {
+                    for j in 0..rendered_mino[i].len() {
+                        if !(i as i64 + self.cm.get_y() >= 0
+                            && i as i64 + self.cm.get_y() < self.field.get_height() as i64
+                            && j as i64 + self.cm.get_x() >= 0
+                            && j as i64 + self.cm.get_x() < self.field.get_width() as i64)
+                        {
+                            continue;
+                        }
 
-                    if rendered_mino[i][j] {
-                        self.field
-                            .get_block(i + self.cm.get_y() as usize, j + self.cm.get_x() as usize)
-                            .filled = true;
-                        for k in 0..4 {
+                        if rendered_mino[i][j] {
                             self.field
                                 .get_block(
                                     i + self.cm.get_y() as usize,
                                     j + self.cm.get_x() as usize,
                                 )
-                                .color[k] = self.cm.get_mino().get_color()[k];
+                                .filled = true;
+                            for k in 0..4 {
+                                self.field
+                                    .get_block(
+                                        i + self.cm.get_y() as usize,
+                                        j + self.cm.get_x() as usize,
+                                    )
+                                    .color[k] = self.cm.get_mino().get_color()[k];
+                            }
                         }
                     }
                 }
-            }
 
-            // ControlledMinoの切り替え
-            self.cm = Box::new(field::ControlledMino::new(
-                (self.field.get_width() / 2) as i64, // ControlledMinoの幅を考慮
-                self.ng.next(),
-            ));
+                // ControlledMinoの切り替え
+                self.cm = Box::new(field::ControlledMino::new(
+                    (self.field.get_width() / 2) as i64, // ControlledMinoの幅を考慮
+                    self.ng.next(),
+                ));
 
-            // 一列揃っている場合の削除処理
-            match self.field.is_filled_each_row() {
-                Some(deleted_ids) => {
-                    self.num_deleted_lines += deleted_ids.len();
-                    self.field.delete_lines(deleted_ids);
+                // 一列揃っている場合の削除処理
+                match self.field.is_filled_each_row() {
+                    Some(deleted_ids) => {
+                        self.num_deleted_lines += deleted_ids.len();
+                        self.field.delete_lines(deleted_ids);
+                    }
+                    None => {}
                 }
-                None => {}
-            }
 
-            self.holded = false;
+                self.holded = false;
+                self.grounded_time_in_milli = current_time_in_milli;
+            }
         }
 
         if !self.right_rotated && key.right_rotate {

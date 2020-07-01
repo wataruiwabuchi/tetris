@@ -500,6 +500,10 @@ impl ControlledMino {
         if movable {
             self.x = moved_x;
             self.y = moved_y;
+            match ori {
+                Orientation::Downward => self.grounded = false,
+                _ => {}
+            }
         } else {
             match ori {
                 Orientation::Downward => self.grounded = true,
