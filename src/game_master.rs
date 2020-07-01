@@ -231,11 +231,11 @@ impl GameMaster {
         }
 
         if !self.right_rotated && key.right_rotate {
-            self.cm.right_rotate(&mut self.field);
+            self.cm.right_rotate_with_srs(&mut self.field);
         }
 
         if !self.left_rotated && key.left_rotate {
-            self.cm.left_rotate(&mut self.field);
+            self.cm.left_rotate_with_srs(&mut self.field);
         }
 
         if !self.hard_dropped && key.hard_drop {
