@@ -195,6 +195,7 @@ impl GameMaster {
         } else {
             if current_time_in_milli - self.grounded_time_in_milli
                 > self.params.grounded_interval as i32
+                || key.hard_drop
             {
                 // ControlledMinoの位置を確定
                 let rendered_mino = self.cm.render();

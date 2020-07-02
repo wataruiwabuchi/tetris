@@ -467,7 +467,7 @@ impl ControlledMino {
         let mut moved_y = self.get_y() as i64;
 
         match ori {
-            Orientation::Upward => moved_y += 1,
+            Orientation::Upward => moved_y -= 1,
             Orientation::Rightward => moved_x += 1,
             Orientation::Downward => moved_y += 1,
             Orientation::Leftward => moved_x -= 1,
@@ -1383,6 +1383,18 @@ mod controlledmino_tests {
                 },
                 move_ori: Orientation::Leftward,
                 want: (-1, 0, false),
+            },
+            TestCase {
+                name: "おじゃまブロックの生成で重なったときに上に移動".to_string(),
+                x: ControlledMino {
+                    x: 1,
+                    y: 2,
+                    mino: Box::new(mino::TMino::default()),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                move_ori: Orientation::Upward,
+                want: (1, 1, false),
             },
         ];
 
