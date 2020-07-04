@@ -149,7 +149,7 @@ impl GameMaster {
                 let garbage_lines = self.gbg.generate(self.field.get_width(), 1, [0.0; 4]);
                 match self.field.insert_lines(garbage_lines) {
                     Ok(_) => {
-                        // TODO: おじゃまブロックを生成したときの接地処理が自信がない
+                        // おじゃまブロックを生成したときの接地処理
                         let field_height = self.field.get_height() as i64;
                         let field_width = self.field.get_width() as i64;
                         for _ in 0..self.cm.get_y() {
@@ -273,7 +273,6 @@ impl GameMaster {
         // ソフトドロップ，左右移動の処理
         // 連打した場合:キーを押した回数移動
         // 押しっぱなし:初回のみ移動の時間間隔を大きく
-        // TODO: 初回の移動のインターバルを大きくする処理の実装が複雑になった
         let elapsed_move_time_in_milli =
             elapsed_time_in_milli - self.previously_move_time_in_milli as i32;
         for (k, previously_k, ori) in [

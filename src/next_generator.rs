@@ -1,7 +1,6 @@
 /// nextを生成する
 // 一応インタフェース化はするつもりだが戦略などが変化することもないはずなので必要ないかも
 use crate::mino;
-use rand::prelude::*;
 use std::collections::VecDeque;
 
 pub trait NextGenerator {
@@ -24,7 +23,6 @@ impl DefaultNextGenerator {
         }
     }
 
-    ///  bufferの中身が0の場合に実行
     /// 7個1セットのミノを生成してnextのbufferに詰める
     fn generate(&mut self) {
         let num_mino_type = 7;
@@ -68,6 +66,7 @@ impl DefaultNextGenerator {
 
 impl NextGenerator for DefaultNextGenerator {
     /// 次のミノを取得する
+    /// bufferからは取り除かれる
     fn next(&mut self) -> Box<dyn mino::Mino> {
         if self.buffer.len() <= 7 {
             self.generate();
@@ -75,6 +74,10 @@ impl NextGenerator for DefaultNextGenerator {
         self.buffer.pop_front().unwrap()
     }
 
+    /// nextミノのbufferへの参照を取得する
+    /// idx=0が次のnext
+    /// bufferからは取り除かれない
+    /// nextを画面にrenderingするために作成した
     fn get_next(&self, idx: usize) -> Option<&Box<dyn mino::Mino>> {
         if self.buffer.len() > idx {
             Some(&self.buffer[idx])

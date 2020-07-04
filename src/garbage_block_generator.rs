@@ -1,7 +1,6 @@
-// おじゃまブロックの生成器
+/// おじゃまブロックの生成器
 // 戦略を切り替えられるといいかも？
 // 完全ランダム，一列あたりに何個の空きがあるか，同じ列が空く確率を上げる等
-// 掘りテトの一定時間で出現するのかなどはGameMaster側で管理？
 use crate::field;
 use std::collections::HashSet;
 
@@ -14,9 +13,9 @@ pub trait GarbageBlockGenerator {
     ) -> Vec<Vec<field::FieldBlock>>;
 }
 
-// TOJの掘りテトを意識したもの
-// 同じ列を空ける確率を操作しない
-// 一列あたり空くのは一か所とは限らない（とはいっても何か制限は必要かも）
+/// TOPの掘りテトを意識したおじゃまブロックを生成
+/// 同じ列を空ける確率を操作しない
+/// 一列あたり空くのは一か所とは限らない（とはいっても何か制限は必要かも）
 pub struct HoritetoGarbageBlockGenerator {
     rand_gen: Box<dyn FnMut() -> usize>,
 }
