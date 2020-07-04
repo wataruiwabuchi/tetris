@@ -197,6 +197,13 @@ impl GameMaster {
             }
         }
 
+        if !self.hard_dropped && key.hard_drop {
+            for _ in 0..self.field.get_height() {
+                self.cm
+                    .move_mino(&self.field, controlled_mino::Orientation::Downward);
+            }
+        }
+
         if !self.cm.get_grounded() {
             self.grounded_time_in_milli = current_time_in_milli;
         } else {
@@ -258,13 +265,6 @@ impl GameMaster {
 
         if !self.left_rotated && key.left_rotate {
             self.cm.left_rotate_with_srs(&mut self.field);
-        }
-
-        if !self.hard_dropped && key.hard_drop {
-            for _ in 0..self.field.get_height() {
-                self.cm
-                    .move_mino(&self.field, controlled_mino::Orientation::Downward);
-            }
         }
 
         // TODO: 初回の移動のインターバルを大きくする処理の実装が複雑になった
