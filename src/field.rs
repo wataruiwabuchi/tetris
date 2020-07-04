@@ -63,29 +63,22 @@ impl Field {
 
     /// 横列ごとにminoが揃っているかを判定し揃っている列のインデクスを返す
     /// アニメーション処理などが入ることを考慮して実際に消す処理とは分離してある
-    // TODO : map, all, anyあたりを使うともっと簡潔に書けるらしいので修正
     pub fn is_filled_each_row(&self) -> Option<Vec<usize>> {
-        let mut filled_rows = Vec::new();
+        // 一列埋まっている列のインデックスのVecを取得
+        let filled_row_ids: Vec<usize> = self
+            .blocks
+            .iter()
+            .map(|x| x.iter().all(|x| x.filled))
+            .enumerate()
+            .filter(|x| x.1)
+            .map(|x| x.0)
+            .collect();
 
-        for h in 0..self.get_height() {
-            let mut not_filled = false;
-            for w in 0..self.get_width() {
-                if !self.blocks[h][w].filled {
-                    not_filled = true;
-                    break;
-                }
-            }
-
-            if !not_filled {
-                filled_rows.push(h);
-            }
-        }
-
-        if filled_rows.len() == 0 {
+        if filled_row_ids.len() == 0 {
             return None;
         }
 
-        return Some(filled_rows);
+        return Some(filled_row_ids);
     }
 
     /// 指定されたインデックスのlineを削除
