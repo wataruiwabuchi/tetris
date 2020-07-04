@@ -34,21 +34,6 @@ impl GarbageBlockGenerator for HoritetoGarbageBlockGenerator {
         num_garbage_lines: usize,
         color: [f32; 4],
     ) -> Vec<Vec<field::FieldBlock>> {
-        // TODO:
-        // フィールド側に反映させる方法を考える
-        // フィールドを引数にとる？
-        // GameMasterの方で仲介する？
-        // 最近は引数の値が変化することに恐怖感があるのでGameMaster側で操りたい気もするがその場合はそちら側でエラー処理も書かなければならないのでそちらの記述が増える
-        // ひとまとまりの処理はエラー処理なども含めてパック化しておきたい
-        // フィールドを引数にとる場合はフィールドにおじゃまブロックを挿入するインタフェースを用意して置いたほうがいいかも
-        //
-        // Fieldのインタフェース
-        // 何列かと生成するおじゃまブロックの情報を配列で渡す
-        // controlledminoの位置を確定することがあるかを決めなければならない
-        // 場合によってはgame overが確定するがその判定を行う方法を考える
-        // generateの成功フラグ(results)を返してerrorの場合はgame overでもいいかも
-
-        // TODO: 何個穴を開けるかなどは後で調節
         let mut garbage_lines: Vec<Vec<field::FieldBlock>> = Vec::new();
         for _ in 0..num_garbage_lines {
             let mut line: Vec<field::FieldBlock> = (0..field_width)

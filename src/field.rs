@@ -267,7 +267,6 @@ impl ControlledMino {
         self.ori = before_ori;
     }
 
-    // TODO : SRSの導入
     // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
     // TODO : delta[0]の場合はdefaultと同じなので関数を統合してもいいはず
     // TODO : left_rotate_with_srsと処理が重なる部分が多いので処理の共通化を検討
@@ -391,7 +390,6 @@ impl ControlledMino {
         self.ori = before_ori;
     }
 
-    // TODO : SRSの導入
     // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
     // TODO : delta[0]の場合はdefaultと同じなので関数を統合してもいいはず
     pub fn left_rotate_with_srs(&mut self, field: &mut Field) {
@@ -762,13 +760,6 @@ mod controlledmino_tests {
         }
     }
 
-    // TODO: SRSのテスト方法を考える
-    // 何も工夫しない場合のテストしなければならないパターン数
-    // 6(ミノ) * 6(移動) * 4(上下左右) * 2(回転方向) = 288
-    // テストするためのアイデア
-    // 1: 代表的な回転入れのパターンのみ
-    // 2: 何らかの方法で機械的にパターンを生成
-    // 3: 気合で全部書く
     #[test]
     fn test_right_rotate() {
         struct TestCase {
