@@ -1,8 +1,8 @@
 use crate::field;
 use crate::mino;
 
-/// 21×10のテトリスのフィールドを表現
-/// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
+/// ユーザが操作するミノ
+/// 回転，移動などを行う
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Orientation {
@@ -54,8 +54,9 @@ impl ControlledMino {
         &mut self.mino
     }
 
-    // ミノの種類と向きからフィールド上での状態を生成する
-    // ミノの向きによってclosureを切り替えている
+    /// ミノの種類と向きを反映したshapeを生成する
+    /// 返り値は ミノのサイズ x ミノのサイズ
+    /// フィールド上での位置などは反映しない
     pub fn render(&self) -> Vec<Vec<bool>> {
         let size = self.mino.get_size();
         if size < 1 {
@@ -73,6 +74,7 @@ impl ControlledMino {
             .collect()
     }
 
+    // TODO: 回転は失敗することもあるので返り値はresultのほうがいいかも
     pub fn right_rotate(&mut self, field: &field::Field) {
         let original_ori = self.ori;
 
@@ -224,8 +226,9 @@ impl ControlledMino {
         self.ori = original_ori;
     }
 
-    // moveは予約語らしいので使えない
-    // ミノを移動させる
+    /// ミノを移動させる
+    /// 移動方向は上下左右の4パターン
+    // TODO: 失敗することもあるので返り値はresultにするべきでは?
     pub fn move_mino(&mut self, field: &field::Field, ori: Orientation) {
         let original_y = self.y;
         let original_x = self.x;
@@ -260,6 +263,10 @@ impl ControlledMino {
         }
     }
 
+    /// 現在のControlledMinoの位置が不正化を判定する
+    /// 不正な状態
+    /// 1: ControlledMinoのブロックがフィールド外にはみ出している
+    /// 2: ControlledMinoのブロックとフィールドのブロックが重なっている
     fn is_invalid_position(&self, field: &field::Field) -> bool {
         let rendered_mino = self.render();
         let mut invalid = false;
