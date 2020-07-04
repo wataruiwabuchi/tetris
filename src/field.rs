@@ -270,6 +270,7 @@ impl ControlledMino {
     // TODO : SRSの導入
     // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
     // TODO : delta[0]の場合はdefaultと同じなので関数を統合してもいいはず
+    // TODO : left_rotate_with_srsと処理が重なる部分が多いので処理の共通化を検討
     pub fn right_rotate_with_srs(&mut self, field: &mut Field) {
         let before_ori = self.ori;
 
@@ -280,26 +281,30 @@ impl ControlledMino {
             Orientation::Leftward => Orientation::Upward,
         };
 
-        // Iミノの場合
+        // 参考: https://tetris.wiki/Super_Rotation_System
+        // 参考とはyの正負が反転している
         // TODO: 型の判定などを用いてもっと直接的に判定したい
-        if self.mino.get_size() == 4 {
-            // TODO: IミノのSRSを実装
-            return;
-        }
+        let delta = if self.mino.get_size() == 4 {
+            // Iミノの場合
+            match before_ori {
+                Orientation::Upward => [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
+                Orientation::Rightward => [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
+                Orientation::Downward => [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
+                Orientation::Leftward => [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
+            }
+        } else {
+            // Iミノ以外
+            match before_ori {
+                Orientation::Upward => [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
+                Orientation::Rightward => [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
+                Orientation::Downward => [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
+                Orientation::Leftward => [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
+            }
+        };
 
-        // 参考: https://tetrisch.github.io/main/srs.html
-        // ミノの中心を基準に考えないと規則にしたがって考えるのは困難
-        // Iミノ以外の処理
-        let delta = [[0, 0], [0, 1], [1, 1], [-2, 0], [-2, 1]]; // SRSの移動時の差分
-                                                                // 元の向きからどの順序で中心が移動するかを判定
         for d in delta.iter() {
-            let dy = d[0] * (self.ori as i64 % 2 * (-2) + 1);
-            let dx = d[1] * (self.ori as i64 / 2 * 2 - 1);
-
-            // 一度基準座標を左上から中心に変更
-            // 中心を基準にSRSの移動を実行
-            // 基準座標を左上に戻す
-            // SRSの移動可能判定を行う
+            let dy = -d[1]; // 参考の正負の反転を補正
+            let dx = d[0];
             let moved_y = self.y as i64 + dy;
             let moved_x = self.x as i64 + dx;
 
@@ -342,7 +347,6 @@ impl ControlledMino {
     }
 
     // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
-    // TODO : SRSの導入
     pub fn left_rotate(&mut self, field: &mut Field) {
         let before_ori = self.ori;
 
@@ -387,6 +391,9 @@ impl ControlledMino {
         self.ori = before_ori;
     }
 
+    // TODO : SRSの導入
+    // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
+    // TODO : delta[0]の場合はdefaultと同じなので関数を統合してもいいはず
     pub fn left_rotate_with_srs(&mut self, field: &mut Field) {
         let before_ori = self.ori;
 
@@ -397,26 +404,30 @@ impl ControlledMino {
             Orientation::Leftward => Orientation::Downward,
         };
 
-        // Iミノの場合
+        // 参考: https://tetris.wiki/Super_Rotation_System
+        // 参考とはyの正負が反転している
         // TODO: 型の判定などを用いてもっと直接的に判定したい
-        if self.mino.get_size() == 4 {
-            // TODO: IミノのSRSを実装
-            return;
-        }
+        let delta = if self.mino.get_size() == 4 {
+            // Iミノの場合
+            match before_ori {
+                Orientation::Upward => [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
+                Orientation::Rightward => [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
+                Orientation::Downward => [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
+                Orientation::Leftward => [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
+            }
+        } else {
+            // Iミノ以外
+            match before_ori {
+                Orientation::Upward => [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
+                Orientation::Rightward => [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
+                Orientation::Downward => [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
+                Orientation::Leftward => [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
+            }
+        };
 
-        // 参考: https://tetrisch.github.io/main/srs.html
-        // ミノの中心を基準に考えないと規則にしたがって考えるのは困難
-        // Iミノ以外の処理
-        let delta = [[0, 0], [0, 1], [1, 1], [-2, 0], [-2, 1]]; // SRSの移動時の差分
-                                                                // 元の向きからどの順序で中心が移動するかを判定
         for d in delta.iter() {
-            let dy = d[0] * (self.ori as i64 % 2 * (-2) + 1);
-            let dx = d[1] * (self.ori as i64 / 2 * 2 - 1) * (self.ori as i64 % 2 * 2 - 1);
-
-            // 一度基準座標を左上から中心に変更
-            // 中心を基準にSRSの移動を実行
-            // 基準座標を左上に戻す
-            // SRSの移動可能判定を行う
+            let dy = -d[1]; // 参考の正負の反転を補正
+            let dx = d[0];
             let moved_y = self.y as i64 + dy;
             let moved_x = self.x as i64 + dx;
 
@@ -1116,6 +1127,75 @@ mod controlledmino_tests {
                 ],
                 want: (-1, 2, Orientation::Rightward),
             },
+            TestCase {
+                name: "IMino is pointing right and pattern 1".to_string(),
+                x: ControlledMino {
+                    x: 1,
+                    y: 0,
+                    mino: Box::new(mino::IMino::default()),
+                    ori: Orientation::Rightward,
+                    grounded: false,
+                },
+                field: vec![
+                    vec![false, false, true, false, true],
+                    vec![false, false, true, false, true],
+                    vec![false, false, false, false, true],
+                    vec![false, false, true, false, true],
+                ],
+                want: (0, 0, Orientation::Downward),
+            },
+            TestCase {
+                name: "IMino is pointing right and pattern 2".to_string(),
+                x: ControlledMino {
+                    x: -2,
+                    y: 0,
+                    mino: Box::new(mino::IMino::default()),
+                    ori: Orientation::Rightward,
+                    grounded: false,
+                },
+                field: vec![
+                    vec![false, true, true, true],
+                    vec![false, true, true, true],
+                    vec![false, false, false, false],
+                    vec![false, true, true, true],
+                ],
+                want: (0, 0, Orientation::Downward),
+            },
+            TestCase {
+                name: "IMino is pointing up and pattern 3".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 1,
+                    mino: Box::new(mino::IMino::default()),
+                    ori: Orientation::Upward,
+                    grounded: false,
+                },
+                field: vec![
+                    vec![true, false, false, false],
+                    vec![false, false, false, false],
+                    vec![false, true, true, true],
+                    vec![false, true, true, true],
+                    vec![false, true, true, true],
+                ],
+                want: (-2, 1, Orientation::Rightward),
+            },
+            TestCase {
+                name: "IMino is pointing right and pattern 4".to_string(),
+                x: ControlledMino {
+                    x: -2,
+                    y: 0,
+                    mino: Box::new(mino::IMino::default()),
+                    ori: Orientation::Rightward,
+                    grounded: false,
+                },
+                field: vec![
+                    vec![false, true, true, true],
+                    vec![false, true, true, true],
+                    vec![false, true, true, true],
+                    vec![false, false, false, false],
+                ],
+                want: (0, 1, Orientation::Downward),
+            },
         ];
 
         for case in &mut cases {
@@ -1232,6 +1312,75 @@ mod controlledmino_tests {
                     vec![true, true, false],
                 ],
                 want: (1, 2, Orientation::Leftward),
+            },
+            TestCase {
+                name: "IMino is pointing right and pattern 1".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: 0,
+                    mino: Box::new(mino::IMino::default()),
+                    ori: Orientation::Leftward,
+                    grounded: false,
+                },
+                field: vec![
+                    vec![true, false, true, true, true],
+                    vec![true, false, true, true, true],
+                    vec![true, false, false, false, false],
+                    vec![true, false, true, true, true],
+                ],
+                want: (1, 0, Orientation::Downward),
+            },
+            TestCase {
+                name: "IMino is pointing right and pattern 2".to_string(),
+                x: ControlledMino {
+                    x: 2,
+                    y: 0,
+                    mino: Box::new(mino::IMino::default()),
+                    ori: Orientation::Leftward,
+                    grounded: false,
+                },
+                field: vec![
+                    vec![true, true, true, false],
+                    vec![true, true, true, false],
+                    vec![false, false, false, false],
+                    vec![true, true, true, false],
+                ],
+                want: (0, 0, Orientation::Downward),
+            },
+            TestCase {
+                name: "IMino is pointing up and pattern 3".to_string(),
+                x: ControlledMino {
+                    x: 0,
+                    y: -1,
+                    mino: Box::new(mino::IMino::default()),
+                    ori: Orientation::Downward,
+                    grounded: false,
+                },
+                field: vec![
+                    vec![false, false, false, true],
+                    vec![false, false, false, false],
+                    vec![true, true, true, false],
+                    vec![true, true, true, false],
+                    vec![true, true, true, false],
+                ],
+                want: (1, 1, Orientation::Rightward),
+            },
+            TestCase {
+                name: "IMino is pointing right and pattern 4".to_string(),
+                x: ControlledMino {
+                    x: 2,
+                    y: 0,
+                    mino: Box::new(mino::IMino::default()),
+                    ori: Orientation::Leftward,
+                    grounded: false,
+                },
+                field: vec![
+                    vec![true, true, true, false],
+                    vec![true, true, true, false],
+                    vec![true, true, true, false],
+                    vec![false, false, false, false],
+                ],
+                want: (0, 1, Orientation::Downward),
             },
         ];
 
