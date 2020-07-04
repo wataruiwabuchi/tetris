@@ -50,15 +50,16 @@ impl Field {
         self.width
     }
 
-    // TODO: set関数の実装
-    // 現状だと参照しかするつもりのない関数から呼ぶ場合もmutにしなければならない
-    // set関数を実装しgetからmutをなくせば，getしか呼び出さない関数にはmutをつけない状態で渡しておくことができる
-    // こちらのほうが適切なアクセス管理ができていると考えられる
-    // TODO: 返り値をoptionに変更
-    // index out of
-    // memoryを防ぐための境界判定の処理を一か所にまとめていたほうが実装忘れによるエラーを防止できる気がする
-    pub fn get_block(&mut self, row: usize, col: usize) -> &mut FieldBlock {
-        &mut self.blocks[row][col]
+    pub fn get_block(&self, row: usize, col: usize) -> &FieldBlock {
+        &self.blocks[row][col]
+    }
+
+    pub fn set_block_filled(&mut self, row: usize, col: usize, filled: bool) {
+        self.blocks[row][col].filled = filled;
+    }
+
+    pub fn set_block_color(&mut self, row: usize, col: usize, color: [f32; 4]) {
+        self.blocks[row][col].color = color;
     }
 
     /// 横列ごとにminoが揃っているかを判定し揃っている列のインデクスを返す
@@ -215,8 +216,7 @@ impl ControlledMino {
             .collect()
     }
 
-    // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
-    pub fn right_rotate(&mut self, field: &mut Field) {
+    pub fn right_rotate(&mut self, field: &Field) {
         let before_ori = self.ori;
 
         self.ori = match &self.ori {
@@ -260,10 +260,9 @@ impl ControlledMino {
         self.ori = before_ori;
     }
 
-    // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
     // TODO : delta[0]の場合はdefaultと同じなので関数を統合してもいいはず
     // TODO : left_rotate_with_srsと処理が重なる部分が多いので処理の共通化を検討
-    pub fn right_rotate_with_srs(&mut self, field: &mut Field) {
+    pub fn right_rotate_with_srs(&mut self, field: &Field) {
         let before_ori = self.ori;
 
         self.ori = match &self.ori {
@@ -338,8 +337,7 @@ impl ControlledMino {
         self.ori = before_ori;
     }
 
-    // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
-    pub fn left_rotate(&mut self, field: &mut Field) {
+    pub fn left_rotate(&mut self, field: &Field) {
         let before_ori = self.ori;
 
         self.ori = match &self.ori {
@@ -383,9 +381,8 @@ impl ControlledMino {
         self.ori = before_ori;
     }
 
-    // TODO : fieldのblocksに対するset関数を実装してここのfieldのmutをなくす
     // TODO : delta[0]の場合はdefaultと同じなので関数を統合してもいいはず
-    pub fn left_rotate_with_srs(&mut self, field: &mut Field) {
+    pub fn left_rotate_with_srs(&mut self, field: &Field) {
         let before_ori = self.ori;
 
         self.ori = match &self.ori {
@@ -531,6 +528,16 @@ mod field_tests {
             }
         }
         assert!(true);
+    }
+
+    #[test]
+    fn test_set_block() {
+        let mut f = Field::new(5, 4);
+        let c: [f32; 4] = [0.0; 4];
+        f.set_block_filled(0, 0, true);
+        f.set_block_color(0, 0, c);
+        f.set_block_filled(0, 0, f.get_block(0, 0).filled);
+        f.set_block_color(0, 0, f.get_block(0, 0).color);
     }
 
     #[test]
@@ -870,7 +877,7 @@ mod controlledmino_tests {
             let mut f = Field::new(height, width);
             for i in 0..height {
                 for j in 0..width {
-                    f.get_block(i, j).filled = case.field[i][j];
+                    f.set_block_filled(i, j, case.field[i][j]);
                 }
             }
             m.ori = case.x;
@@ -1002,7 +1009,7 @@ mod controlledmino_tests {
             let mut f = Field::new(height, width);
             for i in 0..height {
                 for j in 0..width {
-                    f.get_block(i, j).filled = case.field[i][j];
+                    f.set_block_filled(i, j, case.field[i][j]);
                 }
             }
             m.ori = case.x;
@@ -1188,7 +1195,7 @@ mod controlledmino_tests {
             let mut f = Field::new(height, width);
             for i in 0..height {
                 for j in 0..width {
-                    f.get_block(i, j).filled = case.field[i][j];
+                    f.set_block_filled(i, j, case.field[i][j]);
                 }
             }
 
@@ -1374,7 +1381,7 @@ mod controlledmino_tests {
             let mut f = Field::new(height, width);
             for i in 0..height {
                 for j in 0..width {
-                    f.get_block(i, j).filled = case.field[i][j];
+                    f.set_block_filled(i, j, case.field[i][j]);
                 }
             }
 

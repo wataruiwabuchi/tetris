@@ -214,20 +214,16 @@ impl GameMaster {
                         }
 
                         if rendered_mino[i][j] {
-                            self.field
-                                .get_block(
-                                    i + self.cm.get_y() as usize,
-                                    j + self.cm.get_x() as usize,
-                                )
-                                .filled = true;
-                            for k in 0..4 {
-                                self.field
-                                    .get_block(
-                                        i + self.cm.get_y() as usize,
-                                        j + self.cm.get_x() as usize,
-                                    )
-                                    .color[k] = self.cm.get_mino().get_color()[k];
-                            }
+                            self.field.set_block_filled(
+                                i + self.cm.get_y() as usize,
+                                j + self.cm.get_x() as usize,
+                                true,
+                            );
+                            self.field.set_block_color(
+                                i + self.cm.get_y() as usize,
+                                j + self.cm.get_x() as usize,
+                                self.cm.get_mino().get_color(),
+                            );
                         }
                     }
                 }
