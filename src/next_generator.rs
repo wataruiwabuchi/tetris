@@ -90,6 +90,7 @@ impl NextGenerator for DefaultNextGenerator {
 #[cfg(test)]
 mod defaultnextgenerator_tests {
     use super::*;
+    use rand::prelude::*;
 
     #[test]
     fn test_generate() {

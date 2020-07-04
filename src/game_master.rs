@@ -4,7 +4,6 @@ use crate::garbage_block_generator;
 use crate::mino;
 use crate::next_generator;
 use crate::next_generator::NextGenerator;
-use std::time::Instant;
 
 pub enum Hold {
     Holding(Box<dyn mino::Mino>),
@@ -430,7 +429,6 @@ impl GameMaster {
 
 #[cfg(test)]
 mod gamemaster_tests {
-    use super::*;
 
     #[test]
     fn test_project_controlled_mino() {}
