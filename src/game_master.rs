@@ -197,6 +197,8 @@ impl GameMaster {
             }
         }
 
+        // 下の接地処理よりも先に処理しないとバグが出る
+        // バグは接地した状態でハードドロップを行うと次のミノまでハードドロップされる
         if !self.hard_dropped && key.hard_drop {
             for _ in 0..self.field.get_height() {
                 self.cm
@@ -212,6 +214,7 @@ impl GameMaster {
                 || key.hard_drop
             {
                 // ControlledMinoの位置を確定
+                // TODO: これはfieldかControlledMino側に関数として実装したほうがいいかも
                 let rendered_mino = self.cm.render();
                 for i in 0..rendered_mino.len() {
                     for j in 0..rendered_mino[i].len() {
@@ -267,10 +270,10 @@ impl GameMaster {
             self.cm.left_rotate_with_srs(&mut self.field);
         }
 
+        // ソフトドロップ，左右移動の処理
+        // 連打した場合:キーを押した回数移動
+        // 押しっぱなし:初回のみ移動の時間間隔を大きく
         // TODO: 初回の移動のインターバルを大きくする処理の実装が複雑になった
-        /// ソフトドロップ，左右移動の処理
-        /// 連打した場合:キーを押した回数移動
-        /// 押しっぱなし:初回のみ移動の時間間隔を大きく
         let elapsed_move_time_in_milli =
             elapsed_time_in_milli - self.previously_move_time_in_milli as i32;
         for (k, previously_k, ori) in [
