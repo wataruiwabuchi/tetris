@@ -74,7 +74,7 @@ impl ControlledMino {
     }
 
     pub fn right_rotate(&mut self, field: &field::Field) {
-        let before_ori = self.ori;
+        let original_ori = self.ori;
 
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Rightward,
@@ -83,44 +83,20 @@ impl ControlledMino {
             Orientation::Leftward => Orientation::Upward,
         };
 
-        let rendered_mino = self.render();
-        let mut invalid_movement = false;
-        let y = self.y as i64;
-        let x = self.x as i64;
-        for i in 0..self.mino.get_size() {
-            for j in 0..self.mino.get_size() {
-                if !rendered_mino[i][j] {
-                    continue;
-                }
-
-                if (y + i as i64) < 0 || (y + i as i64) >= field.get_height() as i64 {
-                    invalid_movement = true;
-                    break;
-                }
-                if (x + j as i64) < 0 || (x + j as i64) >= field.get_width() as i64 {
-                    invalid_movement = true;
-                    break;
-                }
-
-                if field.get_block(y as usize + i, x as usize + j).filled {
-                    invalid_movement = true;
-                    break;
-                }
-            }
-        }
-
-        if !invalid_movement {
+        if !self.is_invalid_position(field) {
             return;
         }
 
         // 回転不可能な場合
-        self.ori = before_ori;
+        self.ori = original_ori;
     }
 
     // TODO : delta[0]の場合はdefaultと同じなので関数を統合してもいいはず
     // TODO : left_rotate_with_srsと処理が重なる部分が多いので処理の共通化を検討
     pub fn right_rotate_with_srs(&mut self, field: &field::Field) {
-        let before_ori = self.ori;
+        let original_y = self.y;
+        let original_x = self.x;
+        let original_ori = self.ori;
 
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Rightward,
@@ -134,7 +110,7 @@ impl ControlledMino {
         // TODO: 型の判定などを用いてもっと直接的に判定したい
         let delta = if self.mino.get_size() == 4 {
             // Iミノの場合
-            match before_ori {
+            match original_ori {
                 Orientation::Upward => [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
                 Orientation::Rightward => [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
                 Orientation::Downward => [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
@@ -142,7 +118,7 @@ impl ControlledMino {
             }
         } else {
             // Iミノ以外
-            match before_ori {
+            match original_ori {
                 Orientation::Upward => [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
                 Orientation::Rightward => [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
                 Orientation::Downward => [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
@@ -156,32 +132,11 @@ impl ControlledMino {
             let moved_y = self.y as i64 + dy;
             let moved_x = self.x as i64 + dx;
 
-            let rendered_mino = self.render();
-            let mut invalid_movement = false;
-            for i in 0..self.mino.get_size() {
-                for j in 0..self.mino.get_size() {
-                    if !rendered_mino[i][j] {
-                        continue;
-                    }
-
-                    let y = moved_y + i as i64;
-                    let x = moved_x + j as i64;
-
-                    if y < 0 || y >= field.get_height() as i64 {
-                        invalid_movement = true;
-                        break;
-                    }
-                    if x < 0 || x >= field.get_width() as i64 {
-                        invalid_movement = true;
-                        break;
-                    }
-
-                    if field.get_block(y as usize, x as usize).filled {
-                        invalid_movement = true;
-                        break;
-                    }
-                }
-            }
+            self.y = moved_y;
+            self.x = moved_x;
+            let invalid_movement = self.is_invalid_position(field);
+            self.y = original_y;
+            self.x = original_x;
 
             if !invalid_movement {
                 self.y = moved_y;
@@ -191,11 +146,11 @@ impl ControlledMino {
         }
 
         // 回転不可能な場合
-        self.ori = before_ori;
+        self.ori = original_ori;
     }
 
     pub fn left_rotate(&mut self, field: &field::Field) {
-        let before_ori = self.ori;
+        let original_ori = self.ori;
 
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Leftward,
@@ -204,43 +159,19 @@ impl ControlledMino {
             Orientation::Leftward => Orientation::Downward,
         };
 
-        let rendered_mino = self.render();
-        let mut invalid_movement = false;
-        let y = self.y as i64;
-        let x = self.x as i64;
-        for i in 0..self.mino.get_size() {
-            for j in 0..self.mino.get_size() {
-                if !rendered_mino[i][j] {
-                    continue;
-                }
-
-                if (y + i as i64) < 0 || (y + i as i64) >= field.get_height() as i64 {
-                    invalid_movement = true;
-                    break;
-                }
-                if (x + j as i64) < 0 || (x + j as i64) >= field.get_width() as i64 {
-                    invalid_movement = true;
-                    break;
-                }
-
-                if field.get_block(y as usize + i, x as usize + j).filled {
-                    invalid_movement = true;
-                    break;
-                }
-            }
-        }
-
-        if !invalid_movement {
+        if !self.is_invalid_position(field) {
             return;
         }
 
         // 回転不可能な場合
-        self.ori = before_ori;
+        self.ori = original_ori;
     }
 
     // TODO : delta[0]の場合はdefaultと同じなので関数を統合してもいいはず
     pub fn left_rotate_with_srs(&mut self, field: &field::Field) {
-        let before_ori = self.ori;
+        let original_y = self.y;
+        let original_x = self.x;
+        let original_ori = self.ori;
 
         self.ori = match &self.ori {
             Orientation::Upward => Orientation::Leftward,
@@ -254,7 +185,7 @@ impl ControlledMino {
         // TODO: 型の判定などを用いてもっと直接的に判定したい
         let delta = if self.mino.get_size() == 4 {
             // Iミノの場合
-            match before_ori {
+            match original_ori {
                 Orientation::Upward => [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
                 Orientation::Rightward => [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
                 Orientation::Downward => [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
@@ -262,7 +193,7 @@ impl ControlledMino {
             }
         } else {
             // Iミノ以外
-            match before_ori {
+            match original_ori {
                 Orientation::Upward => [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
                 Orientation::Rightward => [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
                 Orientation::Downward => [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
@@ -276,32 +207,11 @@ impl ControlledMino {
             let moved_y = self.y as i64 + dy;
             let moved_x = self.x as i64 + dx;
 
-            let rendered_mino = self.render();
-            let mut invalid_movement = false;
-            for i in 0..self.mino.get_size() {
-                for j in 0..self.mino.get_size() {
-                    if !rendered_mino[i][j] {
-                        continue;
-                    }
-
-                    let y = moved_y + i as i64;
-                    let x = moved_x + j as i64;
-
-                    if y < 0 || y >= field.get_height() as i64 {
-                        invalid_movement = true;
-                        break;
-                    }
-                    if x < 0 || x >= field.get_width() as i64 {
-                        invalid_movement = true;
-                        break;
-                    }
-
-                    if field.get_block(y as usize, x as usize).filled {
-                        invalid_movement = true;
-                        break;
-                    }
-                }
-            }
+            self.y = moved_y;
+            self.x = moved_x;
+            let invalid_movement = self.is_invalid_position(field);
+            self.y = original_y;
+            self.x = original_x;
 
             if !invalid_movement {
                 self.y = moved_y;
@@ -311,16 +221,16 @@ impl ControlledMino {
         }
 
         // 回転不可能な場合
-        self.ori = before_ori;
+        self.ori = original_ori;
     }
 
     // moveは予約語らしいので使えない
     // ミノを移動させる
     pub fn move_mino(&mut self, field: &field::Field, ori: Orientation) {
-        let size = self.mino.get_size();
-        let rendered_mino = self.render();
-        let mut moved_x = self.get_x() as i64;
+        let original_y = self.y;
+        let original_x = self.x;
         let mut moved_y = self.get_y() as i64;
+        let mut moved_x = self.get_x() as i64;
 
         match ori {
             Orientation::Upward => moved_y -= 1,
@@ -329,35 +239,15 @@ impl ControlledMino {
             Orientation::Leftward => moved_x -= 1,
         }
 
-        let mut movable = true;
-        for i in 0..size {
-            for j in 0..size {
-                if !rendered_mino[i][j] {
-                    continue;
-                }
+        self.y = moved_y;
+        self.x = moved_x;
+        let invalid_movement = self.is_invalid_position(field);
+        self.y = original_y;
+        self.x = original_x;
 
-                let x_in_field = j as i64 + moved_x;
-                let y_in_field = i as i64 + moved_y;
-
-                // フィールドの境界チェック
-                // 移動先のブロックが埋まっていないかをチェック
-                if x_in_field < 0
-                    || x_in_field >= field.get_width() as i64
-                    || y_in_field < 0
-                    || y_in_field >= field.get_height() as i64
-                    || field
-                        .get_block(y_in_field as usize, x_in_field as usize)
-                        .filled
-                {
-                    movable = false;
-                    break;
-                }
-            }
-        }
-
-        if movable {
-            self.x = moved_x;
+        if !invalid_movement {
             self.y = moved_y;
+            self.x = moved_x;
             match ori {
                 Orientation::Downward => self.grounded = false,
                 _ => {}
@@ -368,6 +258,36 @@ impl ControlledMino {
                 _ => {}
             }
         }
+    }
+
+    fn is_invalid_position(&self, field: &field::Field) -> bool {
+        let rendered_mino = self.render();
+        let mut invalid = false;
+        for i in 0..self.mino.get_size() {
+            for j in 0..self.mino.get_size() {
+                if !rendered_mino[i][j] {
+                    continue;
+                }
+
+                let y = self.y + i as i64;
+                let x = self.x + j as i64;
+
+                if y < 0 || y >= field.get_height() as i64 {
+                    invalid = true;
+                    break;
+                }
+                if x < 0 || x >= field.get_width() as i64 {
+                    invalid = true;
+                    break;
+                }
+
+                if field.get_block(y as usize, x as usize).filled {
+                    invalid = true;
+                    break;
+                }
+            }
+        }
+        invalid
     }
 }
 
