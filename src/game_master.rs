@@ -1,3 +1,4 @@
+use crate::controlled_mino;
 use crate::field;
 use crate::garbage_block_generator;
 use crate::mino;
@@ -58,12 +59,12 @@ impl Default for TetrisParams {
 // ゲーム進行や各要素を管理
 // 各インタフェースだけでも先に決めておかないとこっちがつらいかも？
 pub struct GameMaster {
-    pub field: field::Field,            // テトリスのフィールド
-    pub cm: Box<field::ControlledMino>, // 操作しているミノ
+    pub field: field::Field,                      // テトリスのフィールド
+    pub cm: Box<controlled_mino::ControlledMino>, // 操作しているミノ
     gbg: Box<dyn garbage_block_generator::GarbageBlockGenerator>, // おじゃまブロック
-    ng: Box<dyn next_generator::NextGenerator>, // ネクスト生成器
-    hold: Hold,                         // ホールド
-    holded: bool,                       // 連続でホールドを行うことを禁止
+    ng: Box<dyn next_generator::NextGenerator>,   // ネクスト生成器
+    hold: Hold,                                   // ホールド
+    holded: bool,                                 // 連続でホールドを行うことを禁止
     start_time_in_milli: i32,
     count_drop: i32,
     previously_move_time_in_milli: i32,
@@ -101,7 +102,7 @@ impl GameMaster {
         let params = TetrisParams::default();
         GameMaster {
             field: field::Field::new(height, width),
-            cm: Box::new(field::ControlledMino::new(
+            cm: Box::new(controlled_mino::ControlledMino::new(
                 (width / 2 - (next.get_size() + 1) / 2) as i64, // 初期位置を調整
                 next,
             )),
@@ -137,7 +138,8 @@ impl GameMaster {
         // 時間がリセットされる条件をちゃんと把握しておく必要がある
         // タイマーの正確さによっては負の値が発生する可能性がある
         if elapsed_time_in_milli / self.params.drop_interval as i32 != self.count_drop {
-            self.cm.move_mino(&self.field, field::Orientation::Downward);
+            self.cm
+                .move_mino(&self.field, controlled_mino::Orientation::Downward);
             self.count_drop = elapsed_time_in_milli / self.params.drop_interval as i32;
         }
 
@@ -181,7 +183,8 @@ impl GameMaster {
                                 break;
                             }
 
-                            self.cm.move_mino(&self.field, field::Orientation::Upward);
+                            self.cm
+                                .move_mino(&self.field, controlled_mino::Orientation::Upward);
                         }
                     }
                     Err(err) => {
@@ -230,7 +233,7 @@ impl GameMaster {
 
                 // ControlledMinoの切り替え
                 let next = self.ng.next();
-                self.cm = Box::new(field::ControlledMino::new(
+                self.cm = Box::new(controlled_mino::ControlledMino::new(
                     (self.field.get_width() / 2 - (next.get_size() + 1) / 2) as i64, // 初期位置を調整
                     next,
                 ));
@@ -259,7 +262,8 @@ impl GameMaster {
 
         if !self.hard_dropped && key.hard_drop {
             for _ in 0..self.field.get_height() {
-                self.cm.move_mino(&self.field, field::Orientation::Downward);
+                self.cm
+                    .move_mino(&self.field, controlled_mino::Orientation::Downward);
             }
         }
 
@@ -273,17 +277,17 @@ impl GameMaster {
             (
                 key.soft_drop,
                 self.previously_key_press.soft_drop,
-                field::Orientation::Downward,
+                controlled_mino::Orientation::Downward,
             ),
             (
                 key.left_move,
                 self.previously_key_press.left_move,
-                field::Orientation::Leftward,
+                controlled_mino::Orientation::Leftward,
             ),
             (
                 key.right_move,
                 self.previously_key_press.right_move,
-                field::Orientation::Rightward,
+                controlled_mino::Orientation::Rightward,
             ),
         ]
         .iter()
@@ -314,7 +318,7 @@ impl GameMaster {
                         self.hold = Hold::Holding(m);
 
                         let next = self.ng.next();
-                        self.cm = Box::new(field::ControlledMino::new(
+                        self.cm = Box::new(controlled_mino::ControlledMino::new(
                             (self.field.get_width() / 2 - (next.get_size() + 1) / 2) as i64, // 初期位置を調整
                             next,
                         ));
@@ -351,7 +355,8 @@ impl GameMaster {
 
         if self.enable_ghost {
             for _ in 0..height {
-                self.cm.move_mino(&self.field, field::Orientation::Downward);
+                self.cm
+                    .move_mino(&self.field, controlled_mino::Orientation::Downward);
             }
 
             // ghostを表示

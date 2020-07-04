@@ -1,3 +1,4 @@
+pub mod controlled_mino;
 pub mod field;
 pub mod game_master;
 pub mod garbage_block_generator;
