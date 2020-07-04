@@ -50,7 +50,7 @@ impl Default for TetrisParams {
             first_move_interval: 200,
             second_move_interval: 30,
             garbage_interval: 10000,
-            grounded_interval: 3000,
+            grounded_interval: 1000,
         }
     }
 }
