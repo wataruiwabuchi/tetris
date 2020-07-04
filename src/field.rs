@@ -8,8 +8,6 @@ use std::iter::FromIterator;
 
 // フィールドの各ブロック
 pub struct FieldBlock {
-    // TODO: filledも本来はprivateにしたほうがいい？
-    // 自由にミノを配置したりを考えるとpubのほうが使いやすい？
     pub filled: bool,    // ブロックにミノが存在するか
     pub color: [f32; 4], // ブロックの色
 }
@@ -84,7 +82,6 @@ impl Field {
 
     /// 指定されたインデックスのlineを削除
     pub fn delete_lines(&mut self, deleted_ids: Vec<usize>) {
-        // TODO: 実装に納得がいっていない，もっときれいな実装はないか
         let set_deleted_ids: HashSet<_> = deleted_ids.iter().copied().collect();
         let ids: HashSet<_> = (0..self.height).collect();
         let mut left_ids: Vec<_> = Vec::from_iter(ids.difference(&set_deleted_ids)); // 残すlineのindices

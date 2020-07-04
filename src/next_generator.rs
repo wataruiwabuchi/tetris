@@ -11,7 +11,6 @@ pub trait NextGenerator {
 
 /// 7種類を１セットとして生成する
 pub struct DefaultNextGenerator {
-    // TODO; traitのvecを作成する方法は二つある片方は簡潔だが遅い，もう片方は複雑だが速い
     // https://doc.rust-jp.rs/book/second-edition/ch17-02-trait-objects.html
     buffer: VecDeque<Box<dyn mino::Mino>>,
     rand_gen: Box<dyn FnMut() -> usize>,
@@ -69,8 +68,6 @@ impl DefaultNextGenerator {
 
 impl NextGenerator for DefaultNextGenerator {
     /// 次のミノを取得する
-    // TODO:
-    // 現在の実装ではbufferの中身が0になってから生成しているのでnextとして画面に表示できない．
     fn next(&mut self) -> Box<dyn mino::Mino> {
         if self.buffer.len() <= 7 {
             self.generate();
@@ -78,9 +75,6 @@ impl NextGenerator for DefaultNextGenerator {
         self.buffer.pop_front().unwrap()
     }
 
-    // TODO: idx = 0が次に取り出すminoとする
-    // 内部的にはVec(stack)で実装しているので少し変なことになっている
-    // queueで実装したほうが自然かも？
     fn get_next(&self, idx: usize) -> Option<&Box<dyn mino::Mino>> {
         if self.buffer.len() > idx {
             Some(&self.buffer[idx])
@@ -134,11 +128,6 @@ mod defaultnextgenerator_tests {
         assert!(!(count_some == 0 || count_none == 0));
     }
 
-    // TODO: nextの生成が7個1セットでできているかもテストしたい
-    // rustは型の同一性判定が難しいらしいのでうまい実装ができなかった
-    // 現在思いついているあまり良くない方法(testのためだけに実装することになってしまう)
-    // 1: 型判定用のfieldをstructに追加
-    // 2: 同一性判定のためのtraitを実装
     #[test]
     fn test_next() {
         use std::collections::HashMap;
@@ -151,8 +140,9 @@ mod defaultnextgenerator_tests {
             rand_gen: rand_gen,
         };
 
-        // ミノは同じ数になるように生成しているのでそれをテスト
-        // 構造体の種類を直接判定する方法が見つからなかったのでshapeをbitにみたてて同一性を判定
+        // ミノは7個1セットで生成しているのでテスト
+        // 構造体の種類を直接判定する方法が見つからなかった
+        // shapeをbitにみたてて同一性を判定
         let mut count_next_mino = HashMap::new();
         for _ in 0..7 * num_iter {
             let next_mino = ng.next();
