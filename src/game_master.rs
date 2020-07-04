@@ -96,11 +96,15 @@ impl GameMaster {
         // 共有する方法を考える
         // 乱数が必要な場合に引数として渡すのも一つ
         let mut ng = next_generator::DefaultNextGenerator::new(rand_gen_ng);
+        let next = ng.next();
         let gbg = garbage_block_generator::HoritetoGarbageBlockGenerator::new(rand_gen_gbg);
         let params = TetrisParams::default();
         GameMaster {
             field: field::Field::new(height, width),
-            cm: Box::new(field::ControlledMino::new((width / 2) as i64, ng.next())), // TODO: ContorolledMinoの幅を考慮する必要
+            cm: Box::new(field::ControlledMino::new(
+                (width / 2 - (next.get_size() + 1) / 2) as i64, // 初期位置を調整
+                next,
+            )),
             gbg: Box::new(gbg),
             ng: Box::new(ng),
             hold: Hold::None,
@@ -229,9 +233,10 @@ impl GameMaster {
                 }
 
                 // ControlledMinoの切り替え
+                let next = self.ng.next();
                 self.cm = Box::new(field::ControlledMino::new(
-                    (self.field.get_width() / 2) as i64, // ControlledMinoの幅を考慮
-                    self.ng.next(),
+                    (self.field.get_width() / 2 - (next.get_size() + 1) / 2) as i64, // 初期位置を調整
+                    next,
                 ));
 
                 // 一列揃っている場合の削除処理
@@ -311,9 +316,11 @@ impl GameMaster {
                         let mut m: Box<dyn mino::Mino> = Box::new(mino::TMino::default());
                         std::mem::swap(&mut m, self.cm.get_mino());
                         self.hold = Hold::Holding(m);
+
+                        let next = self.ng.next();
                         self.cm = Box::new(field::ControlledMino::new(
-                            (self.field.get_width() / 2) as i64, // 初期位置を調整
-                            self.ng.next(),
+                            (self.field.get_width() / 2 - (next.get_size() + 1) / 2) as i64, // 初期位置を調整
+                            next,
                         ));
                     }
                 };
