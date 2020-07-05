@@ -2,6 +2,14 @@
 // 現状ではget_sizeなどの全く同じ動作を行う関数をすべてのミノに対して実装している
 // traitのデフォルト実装でこの部分を共通化できれば良いがtraitからはメンバ変数にアクセスできないのでその部分に実装するとエラーが出る
 
+pub const TMINO_COLOR: [f32; 4] = [0.5, 0.0, 0.5, 1.0];
+pub const OMINO_COLOR: [f32; 4] = [0.98, 0.82, 0.11, 1.0];
+pub const SMINO_COLOR: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
+pub const ZMINO_COLOR: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
+pub const LMINO_COLOR: [f32; 4] = [1.0, 0.65, 0.0, 1.0];
+pub const JMINO_COLOR: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
+pub const IMINO_COLOR: [f32; 4] = [0.33, 0.73, 0.83, 1.0];
+
 // トレイトオブジェクトのコピー
 // https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object
 pub trait MinoClone {
@@ -45,7 +53,7 @@ impl Default for TMino {
                 vec![true, true, true],
                 vec![false, false, false],
             ],
-            color: [0.5, 0.0, 0.5, 1.0],
+            color: TMINO_COLOR,
         }
     }
 }
@@ -80,7 +88,7 @@ impl Default for SMino {
                 vec![true, true, false],
                 vec![false, false, false],
             ],
-            color: [0.0, 1.0, 0.0, 1.0],
+            color: SMINO_COLOR,
         }
     }
 }
@@ -115,7 +123,7 @@ impl Default for ZMino {
                 vec![false, true, true],
                 vec![false, false, false],
             ],
-            color: [1.0, 0.0, 0.0, 1.0],
+            color: ZMINO_COLOR,
         }
     }
 }
@@ -150,7 +158,7 @@ impl Default for LMino {
                 vec![true, true, true],
                 vec![false, false, false],
             ],
-            color: [1.0, 0.65, 0.0, 1.0],
+            color: LMINO_COLOR,
         }
     }
 }
@@ -185,7 +193,7 @@ impl Default for JMino {
                 vec![true, true, true],
                 vec![false, false, false],
             ],
-            color: [0.0, 0.0, 1.0, 1.0],
+            color: JMINO_COLOR,
         }
     }
 }
@@ -221,7 +229,7 @@ impl Default for IMino {
                 vec![false, false, false, false],
                 vec![false, false, false, false],
             ],
-            color: [0.33, 0.73, 0.83, 1.0],
+            color: IMINO_COLOR,
         }
     }
 }
@@ -252,7 +260,7 @@ impl Default for OMino {
         OMino {
             size: 2,
             shape: vec![vec![true, true], vec![true, true]],
-            color: [0.98, 0.82, 0.11, 1.0],
+            color: OMINO_COLOR,
         }
     }
 }
