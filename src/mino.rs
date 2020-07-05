@@ -2,12 +2,34 @@
 // 現状ではget_sizeなどの全く同じ動作を行う関数をすべてのミノに対して実装している
 // traitのデフォルト実装でこの部分を共通化できれば良いがtraitからはメンバ変数にアクセスできないのでその部分に実装するとエラーが出る
 
-pub trait Mino {
+// トレイトオブジェクトのコピー
+// https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object
+pub trait MinoClone {
+    fn clone_box(&self) -> Box<dyn Mino>;
+}
+
+impl<T> MinoClone for T
+where
+    T: 'static + Mino + Clone,
+{
+    fn clone_box(&self) -> Box<dyn Mino> {
+        Box::new(self.clone())
+    }
+}
+
+pub trait Mino: MinoClone {
     fn get_size(&self) -> usize;
     fn get_shape(&self) -> &Vec<Vec<bool>>;
     fn get_color(&self) -> [f32; 4];
 }
 
+impl Clone for Box<dyn Mino> {
+    fn clone(&self) -> Box<dyn Mino> {
+        self.clone_box()
+    }
+}
+
+#[derive(Clone)]
 pub struct TMino {
     size: usize,
     shape: Vec<Vec<bool>>,
@@ -42,6 +64,7 @@ impl Mino for TMino {
     }
 }
 
+#[derive(Clone)]
 pub struct SMino {
     size: usize,
     shape: Vec<Vec<bool>>,
@@ -76,6 +99,7 @@ impl Mino for SMino {
     }
 }
 
+#[derive(Clone)]
 pub struct ZMino {
     size: usize,
     shape: Vec<Vec<bool>>,
@@ -110,6 +134,7 @@ impl Mino for ZMino {
     }
 }
 
+#[derive(Clone)]
 pub struct LMino {
     size: usize,
     shape: Vec<Vec<bool>>,
@@ -144,6 +169,7 @@ impl Mino for LMino {
     }
 }
 
+#[derive(Clone)]
 pub struct JMino {
     size: usize,
     shape: Vec<Vec<bool>>,
@@ -178,6 +204,7 @@ impl Mino for JMino {
     }
 }
 
+#[derive(Clone)]
 pub struct IMino {
     size: usize,
     shape: Vec<Vec<bool>>,
@@ -213,6 +240,7 @@ impl Mino for IMino {
     }
 }
 
+#[derive(Clone)]
 pub struct OMino {
     size: usize,
     shape: Vec<Vec<bool>>,
@@ -240,5 +268,16 @@ impl Mino for OMino {
 
     fn get_color(&self) -> [f32; 4] {
         self.color
+    }
+}
+
+#[cfg(test)]
+mod mino_tests {
+    use super::*;
+
+    #[test]
+    fn test_clone() {
+        let m = Box::new(TMino::default());
+        let _n = m.clone();
     }
 }
