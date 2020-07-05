@@ -6,12 +6,14 @@ use std::iter::FromIterator;
 /// controllerからstepが呼び出されそのたびに落下処理や削除処理を行う予定
 
 // フィールドの各ブロック
+#[derive(Clone)]
 pub struct FieldBlock {
     pub filled: bool,    // ブロックにミノが存在するか
     pub color: [f32; 4], // ブロックの色
 }
 
 // テトリスのフィールド
+#[derive(Clone)]
 pub struct Field {
     height: usize,
     width: usize,
@@ -159,6 +161,12 @@ mod field_tests {
             }
         }
         assert!(true);
+    }
+
+    #[test]
+    fn test_clone() {
+        let f1 = Field::new(5, 4);
+        let _f2 = f1.clone();
     }
 
     #[test]
