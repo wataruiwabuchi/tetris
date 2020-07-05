@@ -5,6 +5,8 @@ use crate::mino;
 use crate::next_generator;
 use crate::next_generator::NextGenerator;
 
+const GHOST_COLOR: [f32; 4] = [0.5; 4];
+
 pub enum Hold {
     Holding(Box<dyn mino::Mino>),
     None,
@@ -76,7 +78,6 @@ pub struct GameMaster {
     previously_key_press: KeyPress,
     enable_ghost: bool,
     enable_garbage: bool,
-    ghost_color: [f32; 4],
     game_over: bool,
     num_deleted_lines: usize,
     params: TetrisParams,
@@ -121,7 +122,6 @@ impl GameMaster {
             previously_key_press: KeyPress::default(),
             enable_ghost: enable_ghost,
             enable_garbage: enable_garbage,
-            ghost_color: [0.5; 4],
             game_over: false,
             num_deleted_lines: 0,
             params: params,
@@ -378,7 +378,7 @@ impl GameMaster {
                         projected_filled[i + ghost_y as usize][j + ghost_x as usize] = true;
                         for k in 0..4 {
                             projected_color[i + ghost_y as usize][j + ghost_x as usize][k] =
-                                self.ghost_color[k];
+                                GHOST_COLOR[k];
                         }
                     }
                 }
@@ -429,9 +429,65 @@ impl GameMaster {
 
 #[cfg(test)]
 mod gamemaster_tests {
+    use super::*;
+    use rand::prelude::*;
 
     #[test]
-    fn test_project_controlled_mino() {}
+    fn test_project_controlled_mino() {
+        let mut rng = thread_rng();
+
+        struct TestCase {
+            name: String,
+            x: Box<controlled_mino::ControlledMino>,
+            field_width: usize,
+            field_height: usize,
+            want: (Vec<Vec<bool>>, Vec<Vec<[f32; 4]>>),
+        };
+
+        let cases = vec![TestCase {
+            name: "ghost".to_string(),
+            x: Box::new(controlled_mino::ControlledMino::new(
+                0,
+                Box::new(mino::OMino::default()),
+            )),
+            field_width: 4,
+            field_height: 3,
+            want: (
+                vec![
+                    vec![true, true, false, false],
+                    vec![true, true, false, false],
+                    vec![true, true, false, false],
+                ],
+                vec![
+                    vec![mino::OMINO_COLOR, mino::OMINO_COLOR, [0.0; 4], [0.0; 4]],
+                    vec![mino::OMINO_COLOR, mino::OMINO_COLOR, [0.0; 4], [0.0; 4]],
+                    vec![GHOST_COLOR, GHOST_COLOR, [0.0; 4], [0.0; 4]],
+                ],
+            ),
+        }];
+
+        for case in cases {
+            let rand_gen_ng = Box::new(move || rng.gen::<usize>());
+            let rand_gen_gbg = Box::new(move || rng.gen::<usize>());
+            let mut gm = GameMaster::new(
+                case.field_height,
+                case.field_width,
+                rand_gen_ng,
+                rand_gen_gbg,
+                0,
+                true,
+                false,
+            );
+            gm.cm = case.x;
+
+            assert_eq!(
+                (gm.project_controlled_mino()),
+                case.want,
+                "case {}: failed",
+                case.name
+            )
+        }
+    }
 
     // TODO: 左右移動，ソフトドロップの処理を切り出してテスト
     // 操作感をテストするのは無理な気がする
